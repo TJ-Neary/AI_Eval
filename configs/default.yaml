@@ -1,0 +1,181 @@
+# =============================================================================
+# AI_Eval — Test Configuration
+# =============================================================================
+# Configuration for running LLM evaluation benchmarks.
+# Copy this template and customize for your evaluation run.
+#
+# Usage:
+#   python -m ai_eval run --config eval_config.yaml
+# =============================================================================
+
+eval_name: "default-eval"
+eval_date: ""
+version: "1.0"
+
+# ── Models to Evaluate ───────────────────────────────────────────────────────
+
+models:
+  # Local models (Ollama)
+  - name: "qwen2.5:32b"
+    provider: "ollama"
+    endpoint: "http://localhost:11434"
+    type: "local"
+    quantization: "Q4_K_M"
+    context_window: 32768
+    # Pull before eval: ollama pull qwen2.5:32b
+
+  - name: "llama3.2:3b"
+    provider: "ollama"
+    endpoint: "http://localhost:11434"
+    type: "local"
+    quantization: "Q4_K_M"
+    context_window: 8192
+
+  # API models
+  # - name: "gemini-pro"
+  #   provider: "google"
+  #   type: "api"
+  #   api_key_env: "GOOGLE_API_KEY"    # Reads from environment variable
+  #   context_window: 1048576
+
+  # - name: "claude-sonnet-4"
+  #   provider: "anthropic"
+  #   type: "api"
+  #   api_key_env: "ANTHROPIC_API_KEY"
+  #   context_window: 200000
+
+# ── Test Suites ──────────────────────────────────────────────────────────────
+
+suites:
+  full:
+    description: "Complete evaluation across all categories"
+    categories:
+      - text-generation
+      - code-generation
+      - document-analysis
+      - conversational
+      - structured-output
+    test_cases_per_category: 20
+    repetitions: 3              # Run each test N times for consistency scoring
+
+  quick:
+    description: "Fast evaluation for screening models"
+    categories:
+      - text-generation
+      - code-generation
+      - structured-output
+    test_cases_per_category: 5
+    repetitions: 1
+
+  code-only:
+    description: "Code generation focused evaluation"
+    categories:
+      - code-generation
+    test_cases_per_category: 50
+    repetitions: 3
+
+  rag-fitness:
+    description: "Evaluate fitness for RAG knowledge engine use"
+    categories:
+      - document-analysis
+      - structured-output
+      - text-generation
+    test_cases_per_category: 20
+    repetitions: 3
+    weights:
+      document-analysis: 0.40
+      structured-output: 0.35
+      text-generation: 0.25
+
+# ── Test Parameters ──────────────────────────────────────────────────────────
+
+parameters:
+  # Generation settings
+  temperature: 0.1              # Low temp for reproducibility
+  max_tokens: 2048              # Max output per test
+  timeout_seconds: 120          # Per-test timeout
+
+  # Performance measurement
+  warmup_queries: 3             # Discard first N queries (cold start)
+  measure_memory: true          # Track RAM/VRAM usage
+  measure_power: false          # Track power draw (macOS only, requires sudo)
+
+  # Context length tests
+  context_lengths: [1024, 4096, 8192, 16384, 32768]
+
+  # Quantization comparison (local models only)
+  quantization_levels: ["Q4_K_M", "Q8_0"]
+  # Add more: ["Q3_K_M", "Q5_K_M", "Q6_K", "FP16"]
+
+# ── Hardware Profiling ───────────────────────────────────────────────────────
+
+hardware:
+  auto_detect: true             # Automatically detect and record hardware specs
+  # Manual override (if auto_detect is false):
+  # machine: "MacBook Pro 16-inch 2024"
+  # chip: "Apple M4 Max"
+  # ram_gb: 48
+  # os: "macOS 15.3"
+
+# ── Output ───────────────────────────────────────────────────────────────────
+
+output:
+  # Where to write reports
+  report_dir: "./reports"
+  data_dir: "./data"
+
+  # Formats to generate
+  formats:
+    - markdown          # Human-readable reports
+    - json              # Machine-readable raw data
+    - yaml              # Summary for catalog integration
+
+  # Export to _HQ
+  export_to_templates: true
+  templates_path: "~/Tech_Projects/_HQ/evaluations"
+
+  # Catalog integration
+  update_model_catalog: true    # Auto-update MODEL_CATALOG.md
+  update_decision_matrix: true  # Auto-update DECISION_MATRIX.md
+
+# ── Scoring ──────────────────────────────────────────────────────────────────
+
+scoring:
+  # Rating thresholds
+  excellent: 90
+  good: 75
+  adequate: 60
+  marginal: 40
+
+  # Use-case fitness weights
+  fitness_profiles:
+    rag-knowledge-engine:
+      document-analysis: 0.30
+      structured-output: 0.25
+      text-generation: 0.20
+      code-generation: 0.15
+      conversational: 0.10
+
+    code-assistant:
+      code-generation: 0.40
+      text-generation: 0.20
+      conversational: 0.20
+      structured-output: 0.20
+
+    document-processor:
+      document-analysis: 0.40
+      structured-output: 0.30
+      text-generation: 0.20
+      code-generation: 0.10
+
+    chat-application:
+      conversational: 0.40
+      text-generation: 0.30
+      code-generation: 0.15
+      structured-output: 0.15
+
+    data-pipeline:
+      structured-output: 0.35
+      document-analysis: 0.30
+      code-generation: 0.20
+      text-generation: 0.15
