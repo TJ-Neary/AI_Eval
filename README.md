@@ -84,4 +84,4 @@ AI_Eval/
 
 ## License
 
-TBD — Private repository, licensing undecided.
+MIT License — See [LICENSE](LICENSE) for details.

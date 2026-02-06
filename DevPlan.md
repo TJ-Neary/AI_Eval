@@ -54,7 +54,7 @@
 
 ### Licensing & Distribution
 
-- **Current**: Private repository, undecided license
+- **Current**: Public repository, MIT license
 - **Decision Point**: After MVP proven, evaluate MIT vs commercial
 - **Design Principle**: Build for potential commercialization without over-engineering
 
