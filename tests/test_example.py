@@ -4,24 +4,26 @@ Example test file demonstrating testing patterns for AI_Eval.
 Delete or rename this file once real tests are in place.
 """
 
+from pathlib import Path
+
 import pytest
 
 
 class TestProjectSetup:
     """Verify the project is configured correctly."""
 
-    def test_project_directory_exists(self, tmp_project_dir):
+    def test_project_directory_exists(self, tmp_project_dir: Path) -> None:
         """Temporary project dir is created by fixture."""
         assert tmp_project_dir.exists()
         assert (tmp_project_dir / "data").is_dir()
 
-    def test_sample_file_created(self, sample_file):
+    def test_sample_file_created(self, sample_file: Path) -> None:
         """Sample file fixture creates a readable file."""
         assert sample_file.exists()
         content = sample_file.read_text()
         assert "sample document" in content
 
-    def test_environment_configured(self, mock_env):
+    def test_environment_configured(self, mock_env: Path) -> None:
         """Mock environment variables are set."""
         import os
 
@@ -32,7 +34,7 @@ class TestProjectSetup:
 class TestExampleUnit:
     """Example unit tests — replace with real tests."""
 
-    def test_addition(self):
+    def test_addition(self) -> None:
         assert 1 + 1 == 2
 
     @pytest.mark.parametrize(
@@ -43,10 +45,10 @@ class TestExampleUnit:
             ("world!", 6),
         ],
     )
-    def test_string_length(self, input_val, expected):
+    def test_string_length(self, input_val: str, expected: int) -> None:
         assert len(input_val) == expected
 
-    def test_path_operations(self, tmp_path):
+    def test_path_operations(self, tmp_path: Path) -> None:
         """Demonstrate using tmp_path for file-based tests."""
         test_file = tmp_path / "output.txt"
         test_file.write_text("test output")

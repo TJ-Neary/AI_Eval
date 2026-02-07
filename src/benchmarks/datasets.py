@@ -166,7 +166,7 @@ class DatasetManager:
         with open(path) as f:
             data = yaml.safe_load(f)
 
-        tests = []
+        tests: list[TestCase] = []
         for test_data in data.get("tests", []):
             test = TestCase(
                 id=test_data.get("id", f"test_{len(tests)}"),

@@ -269,7 +269,7 @@ class ProviderFactory:
         if provider_class is None:
             available = ", ".join(cls._registry.keys())
             raise ValueError(f"Unknown provider '{provider_name}'. Available: {available}")
-        return provider_class(model=model, config=config, **kwargs)
+        return provider_class(model=model, config=config, **kwargs)  # type: ignore[no-any-return]
 
     @classmethod
     def available_providers(cls) -> List[str]:

@@ -107,7 +107,7 @@ def calculate_pass_at_k_batch(results: List[List[bool]], k_values: List[int]) ->
                 score = calculate_pass_at_k(n, c, k)
                 scores[k].append(score)
 
-    return {k: np.mean(v) if v else 0.0 for k, v in scores.items()}
+    return {k: float(np.mean(v)) if v else 0.0 for k, v in scores.items()}
 
 
 def evaluate_code_samples(

@@ -97,7 +97,7 @@ class BasePlugin(ABC):
         return []
 
     @abstractmethod
-    async def execute(self, input_text: str, **kwargs) -> PluginResult:
+    async def execute(self, input_text: str, **kwargs: Any) -> PluginResult:
         """Execute the plugin logic."""
         ...
 
@@ -222,7 +222,7 @@ class PluginLoader:
             logger.exception(f"Failed to load plugin {folder.name}: {e}")
             return False
 
-    async def execute(self, name: str, input_text: str, **kwargs) -> PluginResult:
+    async def execute(self, name: str, input_text: str, **kwargs: Any) -> PluginResult:
         """
         Execute a plugin by name.
 
