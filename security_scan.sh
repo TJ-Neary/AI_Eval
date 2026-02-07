@@ -18,7 +18,7 @@
 set -euo pipefail
 
 # Scanner version — bump when checks change. Used by /commit to detect outdated scanners.
-SCANNER_VERSION="3"
+SCANNER_VERSION="5"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -111,7 +111,7 @@ echo ""
 # ---------------------------------------------------------------------------
 # 1. API Keys & Secrets
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[1/8] Scanning for API keys and secrets...${NC}"
+echo -e "${BOLD}[1/10] Scanning for API keys and secrets...${NC}"
 
 SECRET_PATTERNS=(
     'sk-[a-zA-Z0-9]{20,}'                           # OpenAI keys
@@ -155,7 +155,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 2. Hardcoded User Paths
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[2/8] Scanning for hardcoded user paths...${NC}"
+echo -e "${BOLD}[2/10] Scanning for hardcoded user paths...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
@@ -175,7 +175,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 3. PII Patterns
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[3/8] Scanning for PII patterns...${NC}"
+echo -e "${BOLD}[3/10] Scanning for PII patterns...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
@@ -230,7 +230,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 4. Internal Project References
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[4/8] Scanning for internal/private references...${NC}"
+echo -e "${BOLD}[4/10] Scanning for internal/private references...${NC}"
 
 PRIVATE_TERMS_FILE="$PROJECT_ROOT/.security_terms"
 
@@ -261,7 +261,7 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Sensitive Files That Should Be Gitignored
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[5/8] Checking for sensitive files that should be gitignored...${NC}"
+echo -e "${BOLD}[5/10] Checking for sensitive files that should be gitignored...${NC}"
 
 SENSITIVE_FILES=(
     ".env"
@@ -285,7 +285,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 6. Database / Binary Files
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[6/8] Checking for database and binary files...${NC}"
+echo -e "${BOLD}[6/10] Checking for database and binary files...${NC}"
 
 while IFS= read -r file; do
     case "$file" in
@@ -305,7 +305,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 7. Dangerous Code Patterns
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[7/8] Scanning for dangerous code patterns...${NC}"
+echo -e "${BOLD}[7/10] Scanning for dangerous code patterns...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(py)$ ]] || continue
@@ -350,7 +350,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 8. Private Asset Visibility Check
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[8/8] Checking private asset visibility...${NC}"
+echo -e "${BOLD}[8/10] Checking private asset visibility...${NC}"
 
 # Check if .hq-private/ exists but is NOT gitignored
 if [ -d "$PROJECT_ROOT/.hq-private" ]; then
@@ -373,6 +373,77 @@ while IFS= read -r file; do
             "Move to .hq-private/ (gitignored) or remove the file from version control"
     fi
 done < <(get_files)
+
+# ---------------------------------------------------------------------------
+# 9. Commercial & Sensitivity Markers
+# ---------------------------------------------------------------------------
+echo -e "${BOLD}[9/10] Checking for commercial/sensitivity markers...${NC}"
+
+while IFS= read -r file; do
+    [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
+    [ ! -f "$file" ] && continue
+    [[ "$file" =~ security_scan\.sh$ ]] && continue
+    [[ "$file" =~ CLAUDE\.md$ ]] && continue
+    [[ "$file" =~ SECURITY\.md$ ]] && continue
+
+    # COMMERCIAL marker
+    matches=$(grep -nE '#\s*COMMERCIAL:' "$file" 2>/dev/null | head -3 || true)
+    if [ -n "$matches" ]; then
+        finding "HIGH" "Commercial IP Marker" "$file" \
+            "$(echo "$matches" | head -1)" \
+            "This file contains proprietary business logic. Keep in private repo or remove the marked code."
+    fi
+
+    # SECURITY-CONFIG marker
+    matches=$(grep -nE '#\s*SECURITY-CONFIG:' "$file" 2>/dev/null | head -3 || true)
+    if [ -n "$matches" ]; then
+        finding "MEDIUM" "Security Config to Externalize" "$file" \
+            "$(echo "$matches" | head -1)" \
+            "Move hardcoded detection rules to a gitignored config file and load at runtime."
+    fi
+
+    # PRIVATE-DATA marker
+    matches=$(grep -nE '#\s*PRIVATE-DATA:' "$file" 2>/dev/null | head -3 || true)
+    if [ -n "$matches" ]; then
+        finding "HIGH" "Private Data Reference" "$file" \
+            "$(echo "$matches" | head -1)" \
+            "Ensure private data is loaded from gitignored config, not committed to repo."
+    fi
+done < <(get_files)
+
+# ---------------------------------------------------------------------------
+# 10. Static Analysis Tools (Bandit + pip-audit)
+# ---------------------------------------------------------------------------
+echo -e "${BOLD}[10/10] Running static analysis tools...${NC}"
+
+# Bandit — Python security linting
+if command -v bandit &>/dev/null; then
+    bandit_output=$(bandit -r src/ utils/ -ll -q 2>&1 || true)
+    if echo "$bandit_output" | grep -qE '>> Issue:'; then
+        issue_count=$(echo "$bandit_output" | grep -c '>> Issue:' || true)
+        finding "HIGH" "Bandit Security Issues" "src/ utils/" \
+            "Bandit found ${issue_count} issue(s) at medium+ severity" \
+            "Run: bandit -r src/ utils/ -ll  to see details"
+    fi
+else
+    echo -e "  ${YELLOW}bandit not installed — skipping Python security lint.${NC}"
+    echo -e "  ${YELLOW}Install with: pip install bandit${NC}"
+    echo ""
+fi
+
+# pip-audit — dependency vulnerability check
+if command -v pip-audit &>/dev/null; then
+    audit_output=$(pip-audit -r requirements.txt 2>&1 || true)
+    if echo "$audit_output" | grep -qiE 'found [1-9]'; then
+        finding "HIGH" "Vulnerable Dependencies" "requirements.txt" \
+            "pip-audit found vulnerable packages" \
+            "Run: pip-audit -r requirements.txt  to see details and fixes"
+    fi
+else
+    echo -e "  ${YELLOW}pip-audit not installed — skipping dependency audit.${NC}"
+    echo -e "  ${YELLOW}Install with: pip install pip-audit${NC}"
+    echo ""
+fi
 
 # ---------------------------------------------------------------------------
 # Summary

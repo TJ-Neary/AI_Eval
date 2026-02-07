@@ -63,6 +63,10 @@ line-length = 100
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]
 
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+skips = ["B101"]
+
 [tool.mypy]
 python_version = "3.12"
 warn_return_any = true

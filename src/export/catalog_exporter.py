@@ -15,10 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from src.reporting.report_generator import (
-    _calculate_fitness_scores,
-    _score_rating,
-)
+from src.reporting.report_generator import _calculate_fitness_scores, _score_rating
 from utils.exceptions import ExportError
 from utils.marker_parser import has_markers, read_marker_content, replace_marker_content
 
