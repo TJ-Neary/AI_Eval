@@ -18,7 +18,7 @@
 set -euo pipefail
 
 # Scanner version — bump when checks change. Used by /commit to detect outdated scanners.
-SCANNER_VERSION="2"
+SCANNER_VERSION="3"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -111,7 +111,7 @@ echo ""
 # ---------------------------------------------------------------------------
 # 1. API Keys & Secrets
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[1/7] Scanning for API keys and secrets...${NC}"
+echo -e "${BOLD}[1/8] Scanning for API keys and secrets...${NC}"
 
 SECRET_PATTERNS=(
     'sk-[a-zA-Z0-9]{20,}'                           # OpenAI keys
@@ -155,7 +155,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 2. Hardcoded User Paths
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[2/7] Scanning for hardcoded user paths...${NC}"
+echo -e "${BOLD}[2/8] Scanning for hardcoded user paths...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
@@ -175,7 +175,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 3. PII Patterns
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[3/7] Scanning for PII patterns...${NC}"
+echo -e "${BOLD}[3/8] Scanning for PII patterns...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
@@ -230,7 +230,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 4. Internal Project References
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[4/7] Scanning for internal/private references...${NC}"
+echo -e "${BOLD}[4/8] Scanning for internal/private references...${NC}"
 
 PRIVATE_TERMS_FILE="$PROJECT_ROOT/.security_terms"
 
@@ -261,7 +261,7 @@ fi
 # ---------------------------------------------------------------------------
 # 5. Sensitive Files That Should Be Gitignored
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[5/7] Checking for sensitive files that should be gitignored...${NC}"
+echo -e "${BOLD}[5/8] Checking for sensitive files that should be gitignored...${NC}"
 
 SENSITIVE_FILES=(
     ".env"
@@ -285,7 +285,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 6. Database / Binary Files
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[6/7] Checking for database and binary files...${NC}"
+echo -e "${BOLD}[6/8] Checking for database and binary files...${NC}"
 
 while IFS= read -r file; do
     case "$file" in
@@ -305,7 +305,7 @@ done < <(get_files)
 # ---------------------------------------------------------------------------
 # 7. Dangerous Code Patterns
 # ---------------------------------------------------------------------------
-echo -e "${BOLD}[7/7] Scanning for dangerous code patterns...${NC}"
+echo -e "${BOLD}[7/8] Scanning for dangerous code patterns...${NC}"
 
 while IFS= read -r file; do
     [[ "$file" =~ \.(py)$ ]] || continue
@@ -344,6 +344,33 @@ while IFS= read -r file; do
         finding "HIGH" "Dynamic Code Execution" "$file" \
             "$(echo "$matches" | head -1)" \
             "Avoid eval()/exec() — use safer alternatives"
+    fi
+done < <(get_files)
+
+# ---------------------------------------------------------------------------
+# 8. Private Asset Visibility Check
+# ---------------------------------------------------------------------------
+echo -e "${BOLD}[8/8] Checking private asset visibility...${NC}"
+
+# Check if .hq-private/ exists but is NOT gitignored
+if [ -d "$PROJECT_ROOT/.hq-private" ]; then
+    if ! grep -qE '^\s*\.hq-private/?$' "$PROJECT_ROOT/.gitignore" 2>/dev/null; then
+        finding "CRITICAL" "Private Assets Exposed" ".hq-private/" \
+            ".hq-private/ directory exists but is NOT in .gitignore" \
+            "Add '.hq-private/' to .gitignore immediately"
+    fi
+fi
+
+# Check for files with HQ-VISIBILITY: private marker that are git-tracked
+while IFS= read -r file; do
+    [[ "$file" =~ \.(png|jpg|jpeg|gif|ico|woff|ttf|eot|svg|pyc|so|db|sqlite)$ ]] && continue
+    [ ! -f "$file" ] && continue
+
+    matches=$(grep -nE '# HQ-VISIBILITY:\s*private' "$file" 2>/dev/null | head -3 || true)
+    if [ -n "$matches" ]; then
+        finding "HIGH" "Private HQ Asset Tracked" "$file" \
+            "File contains HQ-VISIBILITY: private marker but is git-tracked" \
+            "Move to .hq-private/ (gitignored) or remove the file from version control"
     fi
 done < <(get_files)
 
