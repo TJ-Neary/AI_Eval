@@ -214,9 +214,7 @@ AI_Eval/
 │   ├── logging_config.py       #   Multi-handler structured logging
 │   ├── retry.py                #   Retry with backoff, circuit breaker, retry budget
 │   ├── rate_limiter.py         #   Sliding window API rate limiting
-│   ├── code_validator.py       #   AST-based code safety validation
 │   ├── state_machine.py        #   Async state machine for workflow management
-│   ├── path_guard.py           #   Filesystem write boundary enforcement
 │   └── plugin_loader.py        #   Dynamic plugin discovery system
 ├── configs/                    # Evaluation configuration files (YAML)
 │   └── default.yaml            #   Default evaluation configuration

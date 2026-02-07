@@ -368,11 +368,9 @@ The following sections address security concerns unique to LLM evaluation worklo
 The pass@k scoring module (`src/scoring/pass_k.py`) executes LLM-generated code in a subprocess to verify functional correctness. This introduces a code execution attack surface that requires multiple layers of mitigation:
 
 - **Subprocess isolation** — All generated code runs in a child process with a 30-second timeout. No generated code executes in the main evaluation process.
-- **Import allowlisting** — The `utils/code_validator.py` module performs AST-based analysis to block dangerous imports (`os.system`, `subprocess`, `eval`, `exec`) before execution.
-- **Filesystem sandboxing** — The `utils/path_guard.py` module enforces write boundaries, preventing generated code from accessing files outside its designated temporary directory.
 - **Temporary directories** — Each code execution creates an isolated `tempfile.TemporaryDirectory()` that is destroyed after evaluation, regardless of outcome.
 
-**Best practice:** Never run pass@k evaluations on untrusted models without reviewing the code validator's allowlist configuration.
+**Best practice:** Never run pass@k evaluations on untrusted models without reviewing the generated code for dangerous patterns.
 
 ### API Key Security by Provider
 
