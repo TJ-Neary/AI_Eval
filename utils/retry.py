@@ -54,7 +54,7 @@ def with_retry(
     jitter: bool = True,
     retryable_exceptions: Tuple[Type[Exception], ...] = TRANSIENT_EXCEPTIONS,
     on_retry: Optional[Callable[[Exception, int], None]] = None,
-):
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """
     Decorator for adding retry logic to functions.
 
@@ -64,9 +64,9 @@ def with_retry(
             return api.request()
     """
 
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             return retry_with_backoff(
                 func,
                 args=args,
@@ -88,7 +88,7 @@ def with_retry(
 def retry_with_backoff(
     func: Callable,
     args: tuple = (),
-    kwargs: dict = None,
+    kwargs: Optional[dict[str, Any]] = None,
     max_attempts: int = 3,
     initial_delay: float = 1.0,
     max_delay: float = 60.0,
@@ -162,7 +162,7 @@ def retry_with_backoff(
                 on_retry(e, attempt)
             time.sleep(delay)
 
-    raise last_exception
+    raise last_exception  # type: ignore[misc]
 
 
 class RetryBudget:
@@ -262,11 +262,11 @@ class CircuitBreaker:
                 f"Circuit breaker: CLOSED -> OPEN (after {self._failure_count} failures)"
             )
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         """Use as decorator."""
 
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             if not self.allow_request():
                 raise NonRetryableError(f"Circuit breaker is OPEN for {func.__name__}")
             try:

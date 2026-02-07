@@ -38,7 +38,8 @@ def _load_index(index_path: Path) -> List[Dict[str, Any]]:
     if not index_path.exists():
         return []
     with open(index_path) as f:
-        return json.load(f)
+        data: List[Dict[str, Any]] = json.load(f)
+        return data
 
 
 def _save_index(index_path: Path, entries: List[Dict[str, Any]]) -> None:

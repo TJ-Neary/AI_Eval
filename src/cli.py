@@ -33,10 +33,12 @@ async def cmd_quick_test(args: argparse.Namespace) -> int:
     """Run a quick single-prompt test."""
     from .benchmarks import BenchmarkRunner
     from .providers import GoogleProvider, OllamaProvider, ProviderFactory
+    from .providers.base import BaseProvider
 
     console.print(f"[cyan]Quick test: {args.model}[/cyan]")
 
     # Create provider
+    provider: BaseProvider
     if args.provider == "ollama":
         provider = OllamaProvider(model=args.model)
     elif args.provider == "google":
@@ -72,6 +74,7 @@ async def cmd_run(args: argparse.Namespace) -> int:
     from .benchmarks import QUICK_TEST_DATASET, BenchmarkRunner, RunConfig
     from .profiling import detect_hardware
     from .providers import GoogleProvider, OllamaProvider
+    from .providers.base import BaseProvider
 
     console.print(f"[cyan]Benchmark: {args.model}[/cyan]")
 
@@ -80,6 +83,7 @@ async def cmd_run(args: argparse.Namespace) -> int:
     console.print(f"[dim]Hardware: {hardware.chip_name} ({hardware.ram_gb:.0f}GB RAM)[/dim]")
 
     # Create provider
+    provider: BaseProvider
     if args.provider == "ollama":
         provider = OllamaProvider(model=args.model)
     elif args.provider == "google":

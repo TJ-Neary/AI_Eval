@@ -255,15 +255,15 @@ class RAGEvaluator:
             try:
                 from deepeval.metrics import FaithfulnessMetric
 
-                metric = FaithfulnessMetric(
+                faith_metric = FaithfulnessMetric(
                     threshold=cfg.faithfulness_threshold,
                     model=cfg.model,
                 )
-                metric.measure(deepeval_test_case)
+                faith_metric.measure(deepeval_test_case)
                 result.faithfulness = RAGMetricResult(
                     name="faithfulness",
-                    score=metric.score or 0.0,
-                    reason=metric.reason or "",
+                    score=faith_metric.score or 0.0,
+                    reason=faith_metric.reason or "",
                     threshold=cfg.faithfulness_threshold,
                 )
             except Exception as e:
@@ -274,15 +274,15 @@ class RAGEvaluator:
             try:
                 from deepeval.metrics import ContextualPrecisionMetric
 
-                metric = ContextualPrecisionMetric(
+                prec_metric = ContextualPrecisionMetric(
                     threshold=cfg.contextual_precision_threshold,
                     model=cfg.model,
                 )
-                metric.measure(deepeval_test_case)
+                prec_metric.measure(deepeval_test_case)
                 result.contextual_precision = RAGMetricResult(
                     name="contextual_precision",
-                    score=metric.score or 0.0,
-                    reason=metric.reason or "",
+                    score=prec_metric.score or 0.0,
+                    reason=prec_metric.reason or "",
                     threshold=cfg.contextual_precision_threshold,
                 )
             except Exception as e:
@@ -293,15 +293,15 @@ class RAGEvaluator:
             try:
                 from deepeval.metrics import ContextualRecallMetric
 
-                metric = ContextualRecallMetric(
+                recall_metric = ContextualRecallMetric(
                     threshold=cfg.contextual_recall_threshold,
                     model=cfg.model,
                 )
-                metric.measure(deepeval_test_case)
+                recall_metric.measure(deepeval_test_case)
                 result.contextual_recall = RAGMetricResult(
                     name="contextual_recall",
-                    score=metric.score or 0.0,
-                    reason=metric.reason or "",
+                    score=recall_metric.score or 0.0,
+                    reason=recall_metric.reason or "",
                     threshold=cfg.contextual_recall_threshold,
                 )
             except Exception as e:
@@ -312,15 +312,15 @@ class RAGEvaluator:
             try:
                 from deepeval.metrics import HallucinationMetric
 
-                metric = HallucinationMetric(
+                hall_metric = HallucinationMetric(
                     threshold=cfg.hallucination_threshold,
                     model=cfg.model,
                 )
-                metric.measure(deepeval_test_case)
+                hall_metric.measure(deepeval_test_case)
                 result.hallucination = RAGMetricResult(
                     name="hallucination",
-                    score=metric.score or 0.0,
-                    reason=metric.reason or "",
+                    score=hall_metric.score or 0.0,
+                    reason=hall_metric.reason or "",
                     threshold=cfg.hallucination_threshold,
                 )
             except Exception as e:

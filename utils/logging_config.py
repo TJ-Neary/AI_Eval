@@ -17,7 +17,7 @@ import time
 import traceback
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 
 class StructuredFormatter(logging.Formatter):
@@ -33,7 +33,7 @@ class StructuredFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
-        if record.exc_info:
+        if record.exc_info and record.exc_info[0] is not None:
             log_data["exception"] = {
                 "type": record.exc_info[0].__name__,
                 "message": str(record.exc_info[1]),
@@ -95,17 +95,18 @@ def setup_logging(
     if console:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.DEBUG)
+        console_fmt: logging.Formatter
         if sys.stdout.isatty():
-            fmt = ColoredFormatter(
+            console_fmt = ColoredFormatter(
                 "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
                 datefmt="%H:%M:%S",
             )
         else:
-            fmt = logging.Formatter(
+            console_fmt = logging.Formatter(
                 "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
                 datefmt="%H:%M:%S",
             )
-        console_handler.setFormatter(fmt)
+        console_handler.setFormatter(console_fmt)
         root_logger.addHandler(console_handler)
 
     # Rotating file handler (human-readable)
@@ -156,30 +157,34 @@ class LogContext:
     def __init__(self, logger: logging.Logger, **context: Any):
         self.logger = logger
         self.context = context
-        self._old_factory = None
+        self._old_factory: Optional[Callable[..., logging.LogRecord]] = None
 
-    def __enter__(self):
+    def __enter__(self) -> "LogContext":
         self._old_factory = logging.getLogRecordFactory()
         context = self.context
+        old = self._old_factory
 
-        def record_factory(*args, **kwargs):
-            record = self._old_factory(*args, **kwargs)
-            record.extra_data = context
+        def record_factory(*args: Any, **kwargs: Any) -> logging.LogRecord:
+            record = old(*args, **kwargs)
+            record.extra_data = context  # dynamic attr on LogRecord
             return record
 
         logging.setLogRecordFactory(record_factory)
         return self
 
-    def __exit__(self, *args):
-        logging.setLogRecordFactory(self._old_factory)
+    def __exit__(self, *args: Any) -> None:
+        if self._old_factory is not None:
+            logging.setLogRecordFactory(self._old_factory)
 
 
-def log_performance(logger: Optional[logging.Logger] = None):
+def log_performance(
+    logger: Optional[logging.Logger] = None,
+) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
     """Decorator to log function execution time."""
 
-    def decorator(func):
+    def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
         @functools.wraps(func)
-        def wrapper(*args, **kwargs):
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             log = logger or logging.getLogger(func.__module__)
             start = time.time()
             try:
@@ -203,19 +208,21 @@ class DebugTimer:
     def __init__(self, name: str, logger: Optional[logging.Logger] = None):
         self.name = name
         self.logger = logger or logging.getLogger("ai_eval.debug")
-        self.start_time = None
-        self.checkpoints: list = []
+        self.start_time: Optional[float] = None
+        self.checkpoints: list[tuple[str, float]] = []
 
-    def __enter__(self):
+    def __enter__(self) -> "DebugTimer":
         self.start_time = time.time()
         return self
 
-    def checkpoint(self, name: str):
+    def checkpoint(self, name: str) -> None:
+        assert self.start_time is not None
         elapsed = time.time() - self.start_time
         self.checkpoints.append((name, elapsed))
         self.logger.debug(f"[{self.name}] {name}: {elapsed * 1000:.1f}ms")
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: Any) -> None:
+        assert self.start_time is not None
         elapsed = time.time() - self.start_time
         self.logger.debug(f"[{self.name}] Total: {elapsed * 1000:.1f}ms")
 

@@ -151,17 +151,17 @@ class CategoryResult:
     @property
     def avg_score(self) -> float:
         scores = [t.score for t in self.tests if t.score is not None]
-        return np.mean(scores) if scores else 0.0
+        return float(np.mean(scores)) if scores else 0.0
 
     @property
     def avg_tokens_per_second(self) -> float:
         tps = [t.tokens_per_second for t in self.tests if t.tokens_per_second > 0]
-        return np.mean(tps) if tps else 0.0
+        return float(np.mean(tps)) if tps else 0.0
 
     @property
     def avg_generation_time_ms(self) -> float:
         times = [t.generation_time_ms for t in self.tests if t.generation_time_ms > 0]
-        return np.mean(times) if times else 0.0
+        return float(np.mean(times)) if times else 0.0
 
 
 @dataclass
@@ -210,10 +210,10 @@ class BenchmarkResult:
 
     @property
     def avg_tokens_per_second(self) -> float:
-        all_tps = []
+        all_tps: list[float] = []
         for cat in self.categories.values():
             all_tps.extend(t.tokens_per_second for t in cat.tests if t.tokens_per_second > 0)
-        return np.mean(all_tps) if all_tps else 0.0
+        return float(np.mean(all_tps)) if all_tps else 0.0
 
     def summary(self) -> str:
         """Generate a text summary of results."""
@@ -267,7 +267,7 @@ class BenchmarkRunner:
     Executes benchmarks against LLM providers.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._judge: Optional[LLMJudge] = None
 
     async def run(
@@ -329,8 +329,8 @@ class BenchmarkRunner:
                     results_by_category[category] = []
 
                 for rep in range(config.repetitions):
-                    result = await self._run_test(provider, test, config, rep)
-                    results_by_category[category].append(result)
+                    test_result = await self._run_test(provider, test, config, rep)
+                    results_by_category[category].append(test_result)
                     progress.advance(task)
 
         # Build result
@@ -509,7 +509,7 @@ class BenchmarkRunner:
                 logger.warning(f"LLM judge failed for {test.id}: {e}")
 
         # Return average of all scores
-        return np.mean(scores) if scores else 50.0
+        return float(np.mean(scores)) if scores else 50.0
 
     async def quick_test(
         self,

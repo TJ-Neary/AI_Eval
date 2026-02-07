@@ -60,7 +60,8 @@ def _load_scoring_config(config_path: Path) -> Dict[str, Any]:
         return {}
     with open(config_path) as f:
         config = yaml.safe_load(f)
-    return config.get("scoring", {})
+    result: Dict[str, Any] = config.get("scoring", {})
+    return result
 
 
 def _calculate_fitness_scores(

@@ -12,7 +12,7 @@ Usage:
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from ollama import AsyncClient
 
@@ -222,7 +222,7 @@ class OllamaProvider(BaseProvider):
             logger.warning(f"Ollama health check failed: {e}")
             return False
 
-    def _extract_metrics(self, response: Dict[str, Any]) -> GenerationMetrics:
+    def _extract_metrics(self, response: Any) -> GenerationMetrics:
         """Extract performance metrics from Ollama response."""
         prompt_tokens = response.get("prompt_eval_count", 0)
         completion_tokens = response.get("eval_count", 0)

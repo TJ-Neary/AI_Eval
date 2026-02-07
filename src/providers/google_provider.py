@@ -95,7 +95,7 @@ class GoogleProvider(BaseProvider):
         self._ensure_client()
         cfg = config or self.config
 
-        generation_config = {
+        generation_config: Dict[str, Any] = {
             "temperature": cfg.temperature,
             "max_output_tokens": cfg.max_tokens,
             "top_p": cfg.top_p,
@@ -182,7 +182,7 @@ class GoogleProvider(BaseProvider):
             else:
                 contents.append({"role": "user", "parts": [{"text": msg.content}]})
 
-        generation_config = {
+        generation_config: Dict[str, Any] = {
             "temperature": cfg.temperature,
             "max_output_tokens": cfg.max_tokens,
             "top_p": cfg.top_p,

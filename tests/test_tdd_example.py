@@ -26,19 +26,19 @@ class TestEmailValidation:
     Step 3 (REFACTOR): Clean up the implementation, keep tests green.
     """
 
-    def test_valid_email_returns_true(self):
+    def test_valid_email_returns_true(self) -> None:
         """RED: This will fail until validate_email is implemented."""
         # from src.utils.validation import validate_email
         # assert validate_email("user@example.com") is True
         pass  # Replace with real assertion when implementing
 
-    def test_missing_at_sign_returns_false(self):
+    def test_missing_at_sign_returns_false(self) -> None:
         """RED: Catches emails without @ symbol."""
         # from src.utils.validation import validate_email
         # assert validate_email("userexample.com") is False
         pass
 
-    def test_empty_string_returns_false(self):
+    def test_empty_string_returns_false(self) -> None:
         """RED: Edge case for empty input."""
         # from src.utils.validation import validate_email
         # assert validate_email("") is False
@@ -64,7 +64,7 @@ class TestBugFixRegression:
     """
 
     @pytest.mark.tdd
-    def test_parser_handles_special_characters(self):
+    def test_parser_handles_special_characters(self) -> None:
         """Regression: parser crashed on '&' in input.
 
         BUG: parse_name("Smith & Associates") raised ValueError
@@ -99,7 +99,7 @@ class TestDataTransformation:
             ("", ""),  # empty string edge case
         ],
     )
-    def test_normalize_title(self, input_val, expected):
+    def test_normalize_title(self, input_val: str, expected: str) -> None:
         """RED: All cases fail until normalize_title is implemented."""
         # from src.utils.text import normalize_title
         # assert normalize_title(input_val) == expected
