@@ -240,7 +240,9 @@ AI_Eval/
 <!-- AI_EVAL:BEGIN -->
 | Model | Provider | Score | Tokens/sec | Pass Rate | Hardware | Date |
 |-------|----------|-------|------------|-----------|----------|------|
-| [llama3.1:8b](reports/llama3.1_8b_20260207_042743.md) | OLLAMA | 66.0 | 88.8 | 4/5 | Apple M4 Max (48GB) | 2026-02-07 |
+| [qwen2.5:32b](reports/qwen2.5_32b_20260207_043753.md) | OLLAMA | 80.3 | 20.5 | 5/5 | Apple M4 Max (48GB) | 2026-02-07 |
+| [llama3.1:8b](reports/llama3.1_8b_20260207_043724.md) | OLLAMA | 78.5 | 88.1 | 5/5 | Apple M4 Max (48GB) | 2026-02-07 |
+| [gemma2:27b](reports/gemma2_27b_20260207_043916.md) | OLLAMA | 67.1 | 18.2 | 4/5 | Apple M4 Max (48GB) | 2026-02-07 |
 
 <!-- AI_EVAL:END -->
 
