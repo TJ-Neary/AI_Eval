@@ -2,7 +2,7 @@
 
 > Comprehensive development roadmap for AI_Eval, an LLM evaluation and benchmarking framework. This document covers architecture decisions, implementation phases, research synthesis, and task tracking for the full project lifecycle — from MVP through commercial readiness.
 
-**Current Phase:** MVP — Core evaluation infrastructure (providers, scoring, benchmarks, hardware profiling) is implemented. Reporting, export, and additional API providers are next.
+**Current Phase:** MVP — Core evaluation infrastructure is fully implemented: providers (Ollama, Google), scoring, benchmarks, hardware profiling, reporting (Jinja2 + README integration), and catalog export (_HQ integration). 3 models benchmarked (llama3.1:8b, qwen2.5:32b, gemma2:27b). CI pipeline, security toolchain (bandit, pip-audit), and full mypy compliance are in place. Next: additional API providers, expanded test suites, and statistical rigor.
 
 ---
 
@@ -126,9 +126,9 @@
 | **Profiling** | `src/profiling/` | Hardware detection and resource monitoring | Implemented |
 | **System Monitor** | `src/monitor/` | Real-time safety monitoring, interference detection | Not Started (directory not created) |
 | **Scoring** | `src/scoring/` | Score calculation and normalization | Implemented |
-| **Reporting** | `src/reporting/` | Report generation from Jinja2 templates | Not Started (directory exists, empty) |
-| **Export** | `src/export/` | Update `_HQ/evaluations/` | Not Started (directory exists, empty) |
-| **CLI** | `src/cli.py` | Command-line interface | Implemented (config loading incomplete) |
+| **Reporting** | `src/reporting/` | Jinja2 report generation + README table updates | **Implemented** (individual reports, JSON export, README comparison table) |
+| **Export** | `src/export/` | Update `_HQ/evaluations/` catalog files | **Implemented** (MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES via markers) |
+| **CLI** | `src/cli.py` | Command-line interface | **Implemented** (`run`, `quick-test`, `--report`, `--readme`, `--no-export` flags) |
 
 ### Data Flow
 
@@ -275,20 +275,23 @@ RAG pipeline and embedding model testing — core use case.
   - [ ] Create `configs/rag-eval.yaml`
   - [ ] CLI: `ai-eval rag-test --pipeline <name>`
 
-### Phase 3: Reporting & Export (Week 3)
+### Phase 3: Reporting & Export (Week 3) ✅
 Generate outputs and update template catalog.
 
-- [ ] **Report generation**
-  - [ ] Render `model_eval_report.md.j2` for individual models
+- [x] **Report generation**
+  - [x] Render `benchmark_report.md.j2` for individual models
   - [ ] Render `comparison_report.md.j2` for head-to-head comparisons
-  - [ ] Save reports to `reports/`
-- [ ] **Template catalog updates**
-  - [ ] Parse `<!-- AI_EVAL:BEGIN -->` / `<!-- AI_EVAL:END -->` markers
-  - [ ] Insert/update model entries in `MODEL_CATALOG.md`
-  - [ ] Update `DECISION_MATRIX.md` with new recommendations
-  - [ ] Update `HARDWARE_PROFILES.md` with tested configurations
-- [ ] **Data persistence**
-  - [ ] Save raw benchmark data as JSON to `evaluations/data/`
+  - [x] Save reports to `reports/` (markdown + JSON)
+  - [x] Update README.md comparison table via markers
+  - [x] Maintain `.results_index.json` for accumulated results
+- [x] **Template catalog updates**
+  - [x] Parse `<!-- AI_EVAL:BEGIN -->` / `<!-- AI_EVAL:END -->` markers (standalone + named)
+  - [x] Insert/update model entries in `MODEL_CATALOG.md`
+  - [x] Update `DECISION_MATRIX.md` with new recommendations
+  - [x] Update `HARDWARE_PROFILES.md` with tested configurations
+  - [x] Model classification: compact (≤3B), midrange (4-14B), large (15B+), code, vision
+- [x] **Data persistence**
+  - [x] Save raw benchmark data as JSON to `evaluations/data/`
   - [ ] Include dataset version hash in all reports
   - [ ] Store historical scores for regression detection
 
@@ -437,8 +440,8 @@ Items required before public release (OSS or commercial):
 | **Documentation site** | Not Started | High |
 | **JSON schema versioning** | Not Started | High |
 | **Contributor guidelines** | Not Started | Medium |
-| **Security audit** | Not Started | High |
-| **Test coverage >80%** | Not Started | Medium |
+| **Security audit** | **In Progress** (bandit, pip-audit, security_scan.sh v5, pre-commit hooks) | High |
+| **Test coverage >80%** | In Progress (99 tests, 18% coverage — needs provider/benchmark integration tests) | Medium |
 | **PyPI package registration** | Not Started | Medium |
 | **Logo/visual identity** | Not Started | Low |
 
@@ -532,9 +535,9 @@ Test after local model evaluation is stable:
 | GoogleProvider | Implemented | — | google-genai SDK |
 | AnthropicProvider | Not Started | — | anthropic SDK |
 | OpenAIProvider | Not Started | — | openai SDK |
-| Report generation | Not Started | — | Jinja2 templates (`src/reporting/` directory exists, empty) |
-| Export to templates | Not Started | — | Update `MODEL_CATALOG.md` (`src/export/` directory exists, empty) |
-| CLI interface | Implemented | — | `ai-eval run` command (config loading TODO) |
+| Report generation | **Implemented** | — | Jinja2 templates, markdown + JSON output, README table |
+| Export to templates | **Implemented** | — | Updates MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES via markers |
+| CLI interface | **Implemented** | — | `run`, `quick-test` commands with `--report`, `--readme`, `--no-export` flags |
 
 ### Low Priority
 
@@ -551,8 +554,8 @@ Issues discovered during comprehensive code review:
 | Issue | Location | Status | Action Required |
 |-------|----------|--------|-----------------|
 | Hardcoded dataset | `src/cli.py:108` | TODO | Load from `RunConfig` or `configs/default.yaml` |
-| Empty reporting dir | `src/reporting/` | Not Started | Implement Jinja2 report generation (Phase 3) |
-| Empty export dir | `src/export/` | Not Started | Implement catalog export (Phase 3) |
+| Empty reporting dir | `src/reporting/` | **Resolved** | Jinja2 report generation + README updater implemented |
+| Empty export dir | `src/export/` | **Resolved** | Catalog exporter implemented with 29 tests |
 | Placeholder tests | `tests/test_example.py` | Placeholder | Add real unit tests for providers, scoring, benchmarks |
 | Missing Anthropic provider | `src/providers/` | Not Started | Implement `AnthropicProvider` |
 | Missing OpenAI provider | `src/providers/` | Not Started | Implement `OpenAIProvider` |
@@ -864,13 +867,14 @@ Files in `~/Tech_Projects/_HQ/evaluations/` that AI_Eval will create or update:
 
 ## Quality Standards
 
-- **Testing**: pytest with coverage (`--cov=src --cov-report=term-missing`)
-- **Formatting**: black (100 char line length)
-- **Linting**: ruff
-- **Type checking**: mypy (strict on new code)
-- **Security**: bandit + security_scan.sh pre-commit hook
+- **Testing**: pytest with coverage (`--cov=src --cov-report=term-missing`), 99 tests passing
+- **Formatting**: black (100 char line length), isort (black profile)
+- **Linting**: ruff (I001, F401, E741 rules enforced)
+- **Type checking**: mypy --ignore-missing-imports (0 errors across src/, utils/, tests/)
+- **Security**: bandit (-ll severity), pip-audit, security_scan.sh v5 (10 phases), pre-commit hooks
+- **CI**: GitHub Actions — ruff, black, isort, mypy, bandit, safety, pip-audit
 - **Commit format**: `<type>: <description>` (feat/fix/docs/refactor/test/chore/perf)
 
 ---
 
-*Last updated: 2026-02-07*
+*Last updated: 2026-02-08*
