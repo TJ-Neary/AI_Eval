@@ -20,13 +20,7 @@ Usage:
     print(results.summary())
 """
 
-from .datasets import (
-    QUICK_TEST_DATASET,
-    BenchmarkSuite,
-    Dataset,
-    DatasetManager,
-    TestCase,
-)
+from .datasets import QUICK_TEST_DATASET, BenchmarkSuite, Dataset, DatasetManager, TestCase
 from .runner import (
     BenchmarkResult,
     BenchmarkRunner,

@@ -7,6 +7,7 @@ Loads environment variables from .env and provides validated paths and settings.
 import os
 import sys
 from pathlib import Path
+
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -33,7 +34,6 @@ STATE_DIR = Path(os.getenv("AI_EVAL_STATE_DIR", str(Path.home() / ".ai_eval")))
 
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 DEBUG = os.getenv("DEBUG", "false").lower() in ("true", "1", "yes")
-
 
 
 def validate_config() -> None:

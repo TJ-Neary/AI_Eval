@@ -7,11 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.reporting.readme_updater import (
-    _merge_result,
-    _render_results_table,
-    update_readme_results,
-)
+from src.reporting.readme_updater import _merge_result, _render_results_table, update_readme_results
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
