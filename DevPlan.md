@@ -564,9 +564,7 @@ Issues discovered during comprehensive code review:
 | Module | Location | Purpose | Recommendation |
 |--------|----------|---------|----------------|
 | `rate_limiter.py` | `utils/` | Sliding window API throttling | Integrate into API providers |
-| `code_validator.py` | `utils/` | AST-based code safety | Integrate into `pass_k.py` for sandboxing |
 | `state_machine.py` | `utils/` | Async workflow state tracking | Integrate into `BenchmarkRunner` lifecycle |
-| `path_guard.py` | `utils/` | Filesystem write boundary | Integrate into code execution sandboxing |
 | `plugin_loader.py` | `utils/` | Dynamic plugin discovery | Wire for future provider plugins (Phase 5+) |
 
 > **Note**: These utilities were scaffolded from `_HQ` templates and are production-ready.
@@ -579,17 +577,14 @@ Specific integration tasks for orphaned utilities:
 | Task | Priority | What | Where | Why |
 |------|----------|------|-------|-----|
 | Wire rate_limiter into providers | **High** | Add `RateLimiter` to API provider base class | `src/providers/google_provider.py`, future `anthropic_provider.py`, `openai_provider.py` | Prevent API rate limit errors during benchmark runs; each provider has different limits |
-| Wire code_validator into pass_k | **High** | Validate LLM-generated code before execution | `src/scoring/pass_k.py` — call `validate_code()` before `subprocess.run()` | Prevent malicious/dangerous code from executing during code generation benchmarks |
-| Wire path_guard into pass_k | **Medium** | Sandbox temp directories for code execution | `src/scoring/pass_k.py` — wrap temp dir creation with `PathGuard` | Ensure generated code can't write outside designated sandbox |
 | Wire state_machine into runner | **Medium** | Replace manual state tracking with `StateMachine` | `src/benchmarks/runner.py` — states: INIT→WARMUP→RUNNING→SCORING→COMPLETE/ERROR | Cleaner lifecycle management, transition history for debugging |
 | Wire retry.py into providers | **Medium** | Use existing retry utility in provider API calls | `src/providers/google_provider.py` — wrap API calls with `retry_with_backoff()` | Already have the utility but providers don't use it; follows ERROR_HANDLING.md guide |
 | Defer plugin_loader | **Low** | Keep for Phase 5+ plugin architecture | `src/plugins/` (future) | Not needed until custom evaluation plugins are implemented |
 
 **Integration Order** (recommended):
-1. `code_validator` + `path_guard` → `pass_k.py` (security-critical for code execution)
-2. `rate_limiter` + `retry.py` → providers (reliability for API calls)
-3. `state_machine` → `runner.py` (code quality improvement)
-4. `plugin_loader` → defer to Phase 5+
+1. `rate_limiter` + `retry.py` → providers (reliability for API calls)
+2. `state_machine` → `runner.py` (code quality improvement)
+3. `plugin_loader` → defer to Phase 5+
 
 ---
 

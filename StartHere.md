@@ -104,9 +104,7 @@
      │ • Markdown/JSON output   │    │ • DECISION_MATRIX.md     │    │ ✓ exceptions.py          │
      │                          │    │ • Marker-based updates   │    │ ✓ retry.py               │
      └──────────────────────────┘    └──────────────────────────┘    │ ○ rate_limiter.py        │
-                                                                     │ ○ code_validator.py      │
                                                                      │ ○ state_machine.py       │
-                                                                     │ ○ path_guard.py          │
                                                                      │ ○ plugin_loader.py       │
                                                                      └──────────────────────────┘
                                                                         ✓ = Wired  ○ = Orphaned
@@ -167,9 +165,7 @@
 | `logging_config.py` | Structured logging | `setup_logging()`, `get_logger()`, `LogContext`, `DebugTimer`, `log_performance()` | **Wired** |
 | `retry.py` | Retry with circuit breaker | `retry_with_backoff()`, `RetryBudget`, `CircuitBreaker`, `RetryStrategies` | **Wired** |
 | `rate_limiter.py` | Sliding window rate limiter | `RateLimiter` — per-operation API throttling | **Orphaned** |
-| `code_validator.py` | AST-based code safety | `CodeValidator`, `validate_code()` — blocked imports/calls | **Orphaned** |
 | `state_machine.py` | Async state machine | `StateMachine[S]`, `StateTransition` — workflow management | **Orphaned** |
-| `path_guard.py` | Filesystem sandbox | `PathGuard` — write boundary enforcement | **Orphaned** |
 | `plugin_loader.py` | Dynamic plugin system | `PluginLoader`, `BasePlugin` — auto-discovery | **Orphaned** |
 
 ### Configuration
@@ -192,7 +188,7 @@
 
 | Issue | Location | Description | Recommendation |
 |-------|----------|-------------|----------------|
-| Orphaned utilities | `utils/rate_limiter.py`, `utils/code_validator.py`, `utils/state_machine.py`, `utils/path_guard.py`, `utils/plugin_loader.py` | Implemented but never imported | Integrate into providers (rate limiting), pass_k (code validation), runner (state machine), or document as optional |
+| Orphaned utilities | `utils/rate_limiter.py`, `utils/state_machine.py`, `utils/plugin_loader.py` | Implemented but never imported | Integrate into providers (rate limiting), runner (state machine), or document as optional |
 | Empty directories | `src/reporting/`, `src/export/` | Directories exist but contain no code | Implement per DevPlan Phase 3 |
 | Hardcoded dataset | `src/cli.py:108` | TODO comment — loads `QUICK_TEST_DATASET` instead of config | Load from `RunConfig` or `configs/default.yaml` |
 | Placeholder tests | `tests/test_example.py` | Example tests only | Add unit tests for providers, scoring, benchmarks |
