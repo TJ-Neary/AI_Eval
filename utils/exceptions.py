@@ -25,3 +25,8 @@ class DatabaseError(AiEvalError):
     pass
 
 
+class ReportingError(AiEvalError):
+    """Error during report generation or export."""
+    pass
+
+
