@@ -26,17 +26,17 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 from rich.console import Console
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 
-from .datasets import Dataset, TestCase, QUICK_TEST_DATASET
+from ..profiling import HardwareProfile, detect_hardware
 from ..providers.base import BaseProvider, GenerationConfig, GenerationResponse
-from ..profiling import detect_hardware, get_memory_usage, HardwareProfile
-from ..scoring.llm_judge import LLMJudge, JudgingCriteria, JudgingResult
-from ..scoring.pass_k import evaluate_code_generation, PassKResult
+from ..scoring.llm_judge import JudgingCriteria, JudgingResult, LLMJudge
+from ..scoring.pass_k import PassKResult, evaluate_code_generation
+from .datasets import QUICK_TEST_DATASET, Dataset, TestCase
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -222,11 +222,11 @@ class BenchmarkResult:
             f"Provider: {self.provider}",
             f"Hardware: {self.hardware.chip_name} ({self.hardware.ram_gb:.0f}GB RAM)",
             f"Duration: {self.duration_seconds:.1f}s",
-            f"",
+            "",
             f"Overall Score: {self.overall_score:.1f}/100",
             f"Avg Throughput: {self.avg_tokens_per_second:.1f} tokens/sec",
             f"Tests: {self.total_passed}/{self.total_tests} passed",
-            f"",
+            "",
             "Category Breakdown:",
         ]
 
@@ -344,9 +344,7 @@ class BenchmarkRunner:
         total_tests = sum(len(c.tests) for c in categories.values())
         total_passed = sum(c.passed for c in categories.values())
         total_tokens = sum(
-            t.prompt_tokens + t.completion_tokens
-            for c in categories.values()
-            for t in c.tests
+            t.prompt_tokens + t.completion_tokens for c in categories.values() for t in c.tests
         )
 
         result = BenchmarkResult(

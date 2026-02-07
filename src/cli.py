@@ -21,7 +21,6 @@ import argparse
 import asyncio
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console
@@ -32,8 +31,8 @@ console = Console()
 
 async def cmd_quick_test(args: argparse.Namespace) -> int:
     """Run a quick single-prompt test."""
-    from .providers import OllamaProvider, GoogleProvider, ProviderFactory
     from .benchmarks import BenchmarkRunner
+    from .providers import GoogleProvider, OllamaProvider, ProviderFactory
 
     console.print(f"[cyan]Quick test: {args.model}[/cyan]")
 
@@ -58,19 +57,21 @@ async def cmd_quick_test(args: argparse.Namespace) -> int:
     console.print(f"\n[bold]Model:[/bold] {result['model']}")
     console.print(f"[bold]Prompt:[/bold] {result['prompt']}")
     console.print(f"\n[bold]Response:[/bold]\n{result['response']}")
-    console.print(f"\n[dim]───────────────────────────────────────[/dim]")
+    console.print("\n[dim]───────────────────────────────────────[/dim]")
     console.print(f"[green]Tokens/sec:[/green] {result['tokens_per_second']:.1f}")
     console.print(f"[green]Generation time:[/green] {result['generation_time_ms']:.0f}ms")
-    console.print(f"[green]Tokens:[/green] {result['prompt_tokens']} prompt + {result['completion_tokens']} completion")
+    console.print(
+        f"[green]Tokens:[/green] {result['prompt_tokens']} prompt + {result['completion_tokens']} completion"
+    )
 
     return 0
 
 
 async def cmd_run(args: argparse.Namespace) -> int:
     """Run a full benchmark."""
-    from .providers import OllamaProvider, GoogleProvider
-    from .benchmarks import BenchmarkRunner, RunConfig, QUICK_TEST_DATASET
+    from .benchmarks import QUICK_TEST_DATASET, BenchmarkRunner, RunConfig
     from .profiling import detect_hardware
+    from .providers import GoogleProvider, OllamaProvider
 
     console.print(f"[cyan]Benchmark: {args.model}[/cyan]")
 
@@ -120,7 +121,7 @@ async def cmd_run(args: argparse.Namespace) -> int:
     # Generate report
     report_path = None
     if not args.no_report:
-        from .reporting import ReportGenerator, ReportConfig
+        from .reporting import ReportConfig, ReportGenerator
 
         report_config = ReportConfig(
             report_dir=Path(args.report_dir),
@@ -136,7 +137,17 @@ async def cmd_run(args: argparse.Namespace) -> int:
 
         readme_path = Path("README.md")
         if update_readme_results(result, readme_path=readme_path, report_path=report_path):
-            console.print(f"[green]README.md updated with results[/green]")
+            console.print("[green]README.md updated with results[/green]")
+
+    # Export to _HQ catalog
+    if not args.no_export:
+        from .export import ExportConfig, export_to_catalog
+
+        export_config = ExportConfig()
+        outcomes = export_to_catalog(result, config=export_config, report_path=report_path)
+        if any(outcomes.values()):
+            updated = [k for k, v in outcomes.items() if v]
+            console.print(f"[green]Catalog updated: {', '.join(updated)}[/green]")
 
     return 0
 
@@ -174,8 +185,8 @@ async def cmd_list_models(args: argparse.Namespace) -> int:
 
 async def cmd_compare(args: argparse.Namespace) -> int:
     """Compare multiple models."""
+    from .benchmarks import QUICK_TEST_DATASET, BenchmarkRunner, RunConfig
     from .providers import OllamaProvider
-    from .benchmarks import BenchmarkRunner, RunConfig, QUICK_TEST_DATASET
 
     models = [m.strip() for m in args.models.split(",")]
     console.print(f"[cyan]Comparing: {', '.join(models)}[/cyan]\n")
@@ -241,10 +252,12 @@ async def cmd_hardware(args: argparse.Namespace) -> int:
     console.print(f"[bold]GPU Cores:[/bold] {profile.gpu_cores}")
     console.print(f"[bold]Neural Engine:[/bold] {profile.neural_engine_cores} cores")
     console.print()
-    console.print(f"[bold]RAM:[/bold] {profile.ram_gb:.1f}GB total, {profile.ram_available_gb:.1f}GB available")
+    console.print(
+        f"[bold]RAM:[/bold] {profile.ram_gb:.1f}GB total, {profile.ram_available_gb:.1f}GB available"
+    )
     console.print(f"[bold]Memory Bandwidth:[/bold] {profile.memory_bandwidth_gbps:.0f} GB/s")
     console.print()
-    console.print(f"[bold]Capabilities:[/bold]")
+    console.print("[bold]Capabilities:[/bold]")
     console.print(f"  MPS: {'✓' if profile.supports_mps else '✗'}")
     console.print(f"  MLX: {'✓' if profile.supports_mlx else '✗'}")
     console.print(f"  CUDA: {'✓' if profile.supports_cuda else '✗'}")
@@ -273,7 +286,9 @@ def main() -> int:
     # quick-test
     quick_parser = subparsers.add_parser("quick-test", help="Run a quick single-prompt test")
     quick_parser.add_argument("--model", "-m", required=True, help="Model name")
-    quick_parser.add_argument("--provider", "-p", default="ollama", help="Provider (ollama, google)")
+    quick_parser.add_argument(
+        "--provider", "-p", default="ollama", help="Provider (ollama, google)"
+    )
     quick_parser.add_argument("--prompt", default="What is 2 + 2?", help="Test prompt")
 
     # run
@@ -289,6 +304,7 @@ def main() -> int:
     run_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
     run_parser.add_argument("--no-readme", action="store_true", help="Skip README update")
     run_parser.add_argument("--report-dir", default="./reports", help="Report output directory")
+    run_parser.add_argument("--no-export", action="store_true", help="Skip catalog export to _HQ")
 
     # compare
     compare_parser = subparsers.add_parser("compare", help="Compare multiple models")

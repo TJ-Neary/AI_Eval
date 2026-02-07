@@ -5,9 +5,7 @@ Provides common setup: temporary directories, mock configurations,
 and test data factories.
 """
 
-import os
 import pytest
-from pathlib import Path
 
 
 @pytest.fixture

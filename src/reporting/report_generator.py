@@ -9,7 +9,6 @@ import json
 import logging
 import re
 from dataclasses import dataclass, field
-from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -90,6 +89,7 @@ class ReportGenerator:
             loader=FileSystemLoader(str(TEMPLATE_DIR)),
             trim_blocks=True,
             lstrip_blocks=True,
+            autoescape=True,
         )
         self._scoring = _load_scoring_config(self.config.config_path)
         self._thresholds = {
@@ -155,25 +155,27 @@ class ReportGenerator:
         for cat_name, cat_result in sorted(result.categories.items()):
             score = float(cat_result.avg_score)
             category_scores[cat_name] = score
-            categories.append({
-                "name": cat_name,
-                "score": f"{score:.1f}",
-                "passed": cat_result.passed,
-                "total": cat_result.total_tests,
-                "pass_rate": f"{cat_result.pass_rate * 100:.0f}",
-                "tokens_per_second": f"{cat_result.avg_tokens_per_second:.1f}",
-                "rating": _score_rating(score, self._thresholds),
-                "tests": [
-                    {
-                        "id": t.test_id,
-                        "status": t.status.name,
-                        "score": f"{t.score:.1f}" if t.score is not None else "N/A",
-                        "time_ms": f"{t.generation_time_ms:.0f}",
-                        "tokens_per_second": f"{t.tokens_per_second:.1f}",
-                    }
-                    for t in cat_result.tests
-                ],
-            })
+            categories.append(
+                {
+                    "name": cat_name,
+                    "score": f"{score:.1f}",
+                    "passed": cat_result.passed,
+                    "total": cat_result.total_tests,
+                    "pass_rate": f"{cat_result.pass_rate * 100:.0f}",
+                    "tokens_per_second": f"{cat_result.avg_tokens_per_second:.1f}",
+                    "rating": _score_rating(score, self._thresholds),
+                    "tests": [
+                        {
+                            "id": t.test_id,
+                            "status": t.status.name,
+                            "score": f"{t.score:.1f}" if t.score is not None else "N/A",
+                            "time_ms": f"{t.generation_time_ms:.0f}",
+                            "tokens_per_second": f"{t.tokens_per_second:.1f}",
+                        }
+                        for t in cat_result.tests
+                    ],
+                }
+            )
 
         # Fitness profiles
         fitness_weights = self._scoring.get("fitness_profiles", {})

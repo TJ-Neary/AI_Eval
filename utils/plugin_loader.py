@@ -31,7 +31,7 @@ import sys
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Awaitable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PluginResult:
     """Standard result from a plugin execution."""
+
     success: bool
     message: str
     data: Optional[Dict[str, Any]] = None
@@ -47,6 +48,7 @@ class PluginResult:
 @dataclass
 class PluginMeta:
     """Metadata loaded from a plugin's meta.json."""
+
     name: str
     description: str = ""
     version: str = "1.0.0"
@@ -205,15 +207,11 @@ class PluginLoader:
             # Get the plugin class (convention: class named Plugin or plugin_class_name)
             plugin_class = getattr(module, self._plugin_class_name, None)
             if plugin_class is None:
-                logger.error(
-                    f"Plugin {folder.name} missing '{self._plugin_class_name}' class"
-                )
+                logger.error(f"Plugin {folder.name} missing '{self._plugin_class_name}' class")
                 return False
 
             if not issubclass(plugin_class, BasePlugin):
-                logger.error(
-                    f"Plugin class in {folder.name} does not inherit from BasePlugin"
-                )
+                logger.error(f"Plugin class in {folder.name} does not inherit from BasePlugin")
                 return False
 
             instance = plugin_class()

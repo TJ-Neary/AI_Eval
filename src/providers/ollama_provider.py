@@ -14,7 +14,6 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import ollama
 from ollama import AsyncClient
 
 from .base import (

@@ -5,8 +5,6 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import MagicMock
 
-import pytest
-
 from src.reporting.report_generator import (
     ReportConfig,
     ReportGenerator,
@@ -14,7 +12,6 @@ from src.reporting.report_generator import (
     _sanitize_model_name,
     _score_rating,
 )
-
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 

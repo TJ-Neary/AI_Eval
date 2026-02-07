@@ -27,8 +27,8 @@ from .base import (
     ProviderType,
     calculate_tokens_per_second,
 )
-from .ollama_provider import OllamaProvider
 from .google_provider import GoogleProvider
+from .ollama_provider import OllamaProvider
 
 __all__ = [
     # Base classes and types

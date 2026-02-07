@@ -272,7 +272,7 @@ QUICK_TEST_DATASET = Dataset(
         ),
         TestCase(
             id="structured_json",
-            prompt='Convert this to JSON: Name: John, Age: 30, City: New York',
+            prompt="Convert this to JSON: Name: John, Age: 30, City: New York",
             category="structured-output",
             subcategory="json",
             expected_patterns=[r'\{.*"name".*:.*"John"', r'"age".*:.*30'],

@@ -13,7 +13,7 @@ Markers must appear on their own line (not embedded in other text):
 
 import logging
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 

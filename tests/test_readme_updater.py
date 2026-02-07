@@ -8,12 +8,10 @@ from unittest.mock import MagicMock
 import pytest
 
 from src.reporting.readme_updater import (
-    ResultSummary,
     _merge_result,
     _render_results_table,
     update_readme_results,
 )
-
 
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -110,46 +108,60 @@ class TestRenderResultsTable:
         assert "No benchmark results yet" in table
 
     def test_renders_table_with_headers(self) -> None:
-        summaries = [{
-            "model": "qwen2.5:32b",
-            "provider": "ollama",
-            "score": 78.5,
-            "tokens_per_second": 42.0,
-            "pass_rate": "8/10",
-            "hardware": "Apple M4 Max (48GB)",
-            "date": "2026-02-05",
-            "report_path": "",
-        }]
+        summaries = [
+            {
+                "model": "qwen2.5:32b",
+                "provider": "ollama",
+                "score": 78.5,
+                "tokens_per_second": 42.0,
+                "pass_rate": "8/10",
+                "hardware": "Apple M4 Max (48GB)",
+                "date": "2026-02-05",
+                "report_path": "",
+            }
+        ]
         table = _render_results_table(summaries)
         assert "| Model |" in table
         assert "qwen2.5:32b" in table
         assert "78.5" in table
 
     def test_renders_report_link(self) -> None:
-        summaries = [{
-            "model": "qwen2.5:32b",
-            "provider": "ollama",
-            "score": 80.0,
-            "tokens_per_second": 40.0,
-            "pass_rate": "8/10",
-            "hardware": "Test HW",
-            "date": "2026-02-05",
-            "report_path": "reports/qwen2.5_32b.md",
-        }]
+        summaries = [
+            {
+                "model": "qwen2.5:32b",
+                "provider": "ollama",
+                "score": 80.0,
+                "tokens_per_second": 40.0,
+                "pass_rate": "8/10",
+                "hardware": "Test HW",
+                "date": "2026-02-05",
+                "report_path": "reports/qwen2.5_32b.md",
+            }
+        ]
         table = _render_results_table(summaries)
         assert "[qwen2.5:32b](reports/qwen2.5_32b.md)" in table
 
     def test_renders_multiple_rows(self) -> None:
         summaries = [
             {
-                "model": "model-a", "provider": "ollama", "score": 90.0,
-                "tokens_per_second": 50.0, "pass_rate": "9/10",
-                "hardware": "HW", "date": "2026-02-05", "report_path": "",
+                "model": "model-a",
+                "provider": "ollama",
+                "score": 90.0,
+                "tokens_per_second": 50.0,
+                "pass_rate": "9/10",
+                "hardware": "HW",
+                "date": "2026-02-05",
+                "report_path": "",
             },
             {
-                "model": "model-b", "provider": "google", "score": 70.0,
-                "tokens_per_second": 30.0, "pass_rate": "7/10",
-                "hardware": "HW", "date": "2026-02-05", "report_path": "",
+                "model": "model-b",
+                "provider": "google",
+                "score": 70.0,
+                "tokens_per_second": 30.0,
+                "pass_rate": "7/10",
+                "hardware": "HW",
+                "date": "2026-02-05",
+                "report_path": "",
             },
         ]
         table = _render_results_table(summaries)
@@ -161,9 +173,7 @@ class TestRenderResultsTable:
 
 
 class TestUpdateReadmeResults:
-    def test_updates_readme_with_results(
-        self, readme_with_markers: Path, tmp_path: Path
-    ) -> None:
+    def test_updates_readme_with_results(self, readme_with_markers: Path, tmp_path: Path) -> None:
         result = _make_mock_result()
         index_path = tmp_path / "index.json"
 
@@ -193,9 +203,7 @@ class TestUpdateReadmeResults:
 
         assert success is False
 
-    def test_creates_index_file(
-        self, readme_with_markers: Path, tmp_path: Path
-    ) -> None:
+    def test_creates_index_file(self, readme_with_markers: Path, tmp_path: Path) -> None:
         result = _make_mock_result()
         index_path = tmp_path / "reports" / "index.json"
 
@@ -209,9 +217,7 @@ class TestUpdateReadmeResults:
         data = json.loads(index_path.read_text())
         assert len(data) == 1
 
-    def test_accumulates_multiple_results(
-        self, readme_with_markers: Path, tmp_path: Path
-    ) -> None:
+    def test_accumulates_multiple_results(self, readme_with_markers: Path, tmp_path: Path) -> None:
         index_path = tmp_path / "index.json"
 
         result1 = _make_mock_result(model="model-a", score=80.0)
@@ -227,9 +233,7 @@ class TestUpdateReadmeResults:
         assert "model-a" in content
         assert "model-b" in content
 
-    def test_replaces_same_model_on_rerun(
-        self, readme_with_markers: Path, tmp_path: Path
-    ) -> None:
+    def test_replaces_same_model_on_rerun(self, readme_with_markers: Path, tmp_path: Path) -> None:
         index_path = tmp_path / "index.json"
 
         result_v1 = _make_mock_result(score=70.0)
@@ -254,9 +258,7 @@ class TestUpdateReadmeResults:
         assert "# AI_Eval" in content
         assert "## Footer" in content
 
-    def test_includes_report_link(
-        self, readme_with_markers: Path, tmp_path: Path
-    ) -> None:
+    def test_includes_report_link(self, readme_with_markers: Path, tmp_path: Path) -> None:
         result = _make_mock_result()
         index_path = tmp_path / "index.json"
         report = Path("reports/test_report.md")

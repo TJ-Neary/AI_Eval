@@ -1,7 +1,9 @@
 """Tests for the marker parser utility."""
 
-import pytest
 from pathlib import Path
+
+import pytest
+
 from utils.marker_parser import has_markers, read_marker_content, replace_marker_content
 
 
@@ -58,9 +60,7 @@ class TestReadMarkerContent:
 
     def test_reads_multiline_content(self, tmp_path: Path) -> None:
         f = tmp_path / "multi.md"
-        f.write_text(
-            "<!-- AI_EVAL:BEGIN -->\nline1\nline2\nline3\n<!-- AI_EVAL:END -->\n"
-        )
+        f.write_text("<!-- AI_EVAL:BEGIN -->\nline1\nline2\nline3\n<!-- AI_EVAL:END -->\n")
         assert read_marker_content(f) == "line1\nline2\nline3\n"
 
     def test_raises_on_nonexistent_file(self, tmp_path: Path) -> None:
@@ -128,7 +128,5 @@ class TestInlineMarkerIgnored:
 
     def test_has_markers_false_when_only_inline(self, tmp_path: Path) -> None:
         f = tmp_path / "doc.md"
-        f.write_text(
-            "Uses `<!-- AI_EVAL:BEGIN -->` / `<!-- AI_EVAL:END -->` markers.\n"
-        )
+        f.write_text("Uses `<!-- AI_EVAL:BEGIN -->` / `<!-- AI_EVAL:END -->` markers.\n")
         assert has_markers(f) is False

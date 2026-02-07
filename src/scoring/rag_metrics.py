@@ -178,9 +178,10 @@ class RAGEvaluator:
     def _check_deepeval(self) -> bool:
         """Check if DeepEval is available."""
         try:
-            import deepeval
-            return True
-        except ImportError:
+            import importlib.util
+
+            return importlib.util.find_spec("deepeval") is not None
+        except (ImportError, ModuleNotFoundError):
             logger.warning("DeepEval not installed. Using fallback metrics.")
             return False
 
@@ -215,11 +216,8 @@ class RAGEvaluator:
         else:
             return await self._evaluate_fallback(test_case)
 
-    async def _evaluate_with_deepeval(
-        self, test_case: RAGTestCase
-    ) -> RAGEvaluationResult:
+    async def _evaluate_with_deepeval(self, test_case: RAGTestCase) -> RAGEvaluationResult:
         """Evaluate using DeepEval metrics."""
-        from deepeval import evaluate
         from deepeval.test_case import LLMTestCase
 
         # Create DeepEval test case
@@ -363,9 +361,7 @@ class RAGEvaluator:
 
         return result
 
-    async def evaluate_batch(
-        self, test_cases: List[RAGTestCase]
-    ) -> List[RAGEvaluationResult]:
+    async def evaluate_batch(self, test_cases: List[RAGTestCase]) -> List[RAGEvaluationResult]:
         """Evaluate multiple test cases."""
         results = []
         for tc in test_cases:

@@ -8,17 +8,16 @@ Provides structured logging with multiple outputs:
 - Error-only log (quick problem identification)
 """
 
+import functools
 import json
 import logging
 import logging.handlers
-import os
 import sys
-import traceback
-import functools
 import time
-from datetime import datetime, timedelta
+import traceback
+from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 
 class StructuredFormatter(logging.Formatter):
@@ -49,10 +48,10 @@ class ColoredFormatter(logging.Formatter):
     """Colored console formatter for human readability."""
 
     COLORS = {
-        "DEBUG": "\033[36m",     # Cyan
-        "INFO": "\033[32m",      # Green
-        "WARNING": "\033[33m",   # Yellow
-        "ERROR": "\033[31m",     # Red
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
         "CRITICAL": "\033[35m",  # Magenta
     }
     RESET = "\033[0m"
@@ -143,8 +142,7 @@ def setup_logging(
     error_handler.setLevel(logging.ERROR)
     error_handler.setFormatter(
         logging.Formatter(
-            "%(asctime)s | %(levelname)s | %(name)s | %(module)s:%(lineno)d\n"
-            "%(message)s\n---"
+            "%(asctime)s | %(levelname)s | %(name)s | %(module)s:%(lineno)d\n" "%(message)s\n---"
         )
     )
     root_logger.addHandler(error_handler)
