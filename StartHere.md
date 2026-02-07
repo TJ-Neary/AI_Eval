@@ -4,9 +4,13 @@
 > Read this document first, then follow links to deeper documentation as needed.
 > Designed for both human developers and LLM agents.
 
-**AI_Eval** is an LLM evaluation and benchmarking tool that compares local models (Ollama) against cloud APIs (Google Gemini, Anthropic Claude, OpenAI GPT) across standardized test suites. It generates hardware-aware recommendations and exports results to `~/Tech_Projects/_HQ/evaluations/` for cross-project model selection.
+**AI_Eval** is an LLM evaluation and benchmarking framework that compares local models (Ollama) against cloud APIs (Google Gemini, Anthropic Claude, OpenAI GPT) across standardized test suites. It generates hardware-aware recommendations using three scoring methodologies (pass@k, LLM-as-Judge, RAG metrics) and produces fitness scores weighted to specific deployment use cases.
 
-**Last Updated**: 2026-02-05
+**Status**: Active development — providers (Ollama, Google), scoring (pass@k, LLM-as-Judge, RAG/DeepEval), benchmark runner, and hardware profiling are implemented. Reporting and export are next.
+
+**Quick orientation**: Start with the [README](./README.md) for features and installation, then review the [Architecture](#system-architecture) section below for the full component map.
+
+**Last Updated**: 2026-02-07
 
 ---
 
@@ -355,45 +359,29 @@ Files created during execution (gitignored):
 
 ---
 
-## Project Templates Integration
+## Template System Integration
 
-This project is registered in [`~/Tech_Projects/_HQ/SYNC_STATUS.yaml`](~/Tech_Projects/_HQ/SYNC_STATUS.yaml).
+This project uses a shared template and standards system for cross-project consistency. Standards, guides, and templates are synced from a central repository.
 
-**Sync Status**: Up to date (all assets at version 1)
+### Synced Assets
 
-### Available Commands
-
-| Command | Purpose |
-|---------|---------|
-| `/sync` | Pull template updates, contribute patterns, update portfolio |
-| `/new-project` | Scaffold a new project from templates |
-
-### Relevant Guides
-
-Based on this project's features, these guides from `_HQ` are applicable:
-
-| Guide | Path | Relevance |
-|-------|------|-----------|
-| LLM Evaluation | [guides/universal/LLM_EVALUATION.md](~/Tech_Projects/_HQ/guides/universal/LLM_EVALUATION.md) | Core methodology |
-| Logging | [guides/universal/LOGGING.md](~/Tech_Projects/_HQ/guides/universal/LOGGING.md) | Structured logging patterns |
-| Error Handling | [guides/universal/ERROR_HANDLING.md](~/Tech_Projects/_HQ/guides/universal/ERROR_HANDLING.md) | Exception hierarchy, retry, circuit breaker |
-| Apple Silicon | [guides/universal/APPLE_SILICON.md](~/Tech_Projects/_HQ/guides/universal/APPLE_SILICON.md) | Hardware optimization |
-| RAG + HITL | [guides/universal/RAG_HITL_PIPELINE.md](~/Tech_Projects/_HQ/guides/universal/RAG_HITL_PIPELINE.md) | RAG evaluation context |
-| PII Detection | [guides/universal/PII_DETECTION.md](~/Tech_Projects/_HQ/guides/universal/PII_DETECTION.md) | Three-layer detection |
-| Testing | [guides/universal/TESTING.md](~/Tech_Projects/_HQ/guides/universal/TESTING.md) | Testing strategy |
-| CI/CD | [guides/universal/CI_CD.md](~/Tech_Projects/_HQ/guides/universal/CI_CD.md) | Pipeline design |
-| Env Configuration | [guides/universal/ENV_CONFIGURATION.md](~/Tech_Projects/_HQ/guides/universal/ENV_CONFIGURATION.md) | .env patterns |
+| Asset | Version | Purpose |
+|-------|---------|---------|
+| `standards/TDD.md` | v2 | Test-driven development standard (mandatory) |
+| `guides/universal/TESTING.md` | v3 | Testing strategy with TDD and mutation testing |
+| `templates/tests-skeleton/test_tdd_example.py.j2` | v1 | TDD example test template |
+| `security_scan.sh` | v2 | Pre-commit security scanner |
 
 ### Evaluation Outputs
 
-AI_Eval is the source of truth for these `_HQ` evaluation files:
+AI_Eval generates and maintains the following shared evaluation files:
 
 | File | Purpose |
 |------|---------|
-| `evaluations/MODEL_CATALOG.md` | LLM model catalog with benchmarks |
-| `evaluations/HARDWARE_PROFILES.md` | Hardware reference configurations |
-| `evaluations/DECISION_MATRIX.md` | Local vs API decision framework |
+| `MODEL_CATALOG.md` | LLM model catalog with benchmark results |
+| `HARDWARE_PROFILES.md` | Hardware reference configurations |
+| `DECISION_MATRIX.md` | Local vs API decision framework |
 
 ---
 
-*Updated 2026-02-05*
+*Updated 2026-02-07*

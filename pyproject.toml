@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Model evaluation and benchmarking projects (LLM, ML, embeddings)"
 readme = "README.md"
 requires-python = ">=3.12"
-license = {text = ""}
+license = {text = "MIT"}
 authors = []
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -43,6 +43,7 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.5.0",
     "matplotlib",
+    "mutmut>=3.0",
 ]
 
 
@@ -75,12 +76,18 @@ markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks tests as integration tests",
     "requires_mlx: marks tests that require MLX (Apple Silicon)",
+    "tdd: marks tests written during active TDD cycles",
 ]
 
 [tool.isort]
 profile = "black"
 line_length = 100
 known_first_party = ["src"]
+
+[tool.mutmut]
+paths_to_mutate = "src/"
+tests_dir = "tests/"
+runner = "python -m pytest -x -q --tb=no"
 
 [tool.coverage.run]
 branch = true

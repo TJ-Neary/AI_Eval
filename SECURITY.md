@@ -1,6 +1,6 @@
-# Project Security Guide
+# AI_Eval Security Policy
 
-Comprehensive security reference for all projects. Covers secrets management, personal data protection, dependency security, secure coding, infrastructure, and incident response.
+Security reference for the AI_Eval project. Covers secrets management, personal data protection, dependency security, secure coding, infrastructure, incident response, and AI_Eval-specific security considerations for LLM evaluation workloads.
 
 ---
 
@@ -359,4 +359,61 @@ When working with AI assistants (Claude Code, Copilot, ChatGPT):
 
 ---
 
-*Reusable across projects. Copy to any new repo as a starting point.*
+## AI_Eval-Specific Security Considerations
+
+The following sections address security concerns unique to LLM evaluation workloads.
+
+### LLM-Generated Code Execution
+
+The pass@k scoring module (`src/scoring/pass_k.py`) executes LLM-generated code in a subprocess to verify functional correctness. This introduces a code execution attack surface that requires multiple layers of mitigation:
+
+- **Subprocess isolation** — All generated code runs in a child process with a 30-second timeout. No generated code executes in the main evaluation process.
+- **Import allowlisting** — The `utils/code_validator.py` module performs AST-based analysis to block dangerous imports (`os.system`, `subprocess`, `eval`, `exec`) before execution.
+- **Filesystem sandboxing** — The `utils/path_guard.py` module enforces write boundaries, preventing generated code from accessing files outside its designated temporary directory.
+- **Temporary directories** — Each code execution creates an isolated `tempfile.TemporaryDirectory()` that is destroyed after evaluation, regardless of outcome.
+
+**Best practice:** Never run pass@k evaluations on untrusted models without reviewing the code validator's allowlist configuration.
+
+### API Key Security by Provider
+
+Each cloud provider requires different API key scopes. Follow the principle of least privilege:
+
+| Provider | Minimum Required Scope | Key Rotation | Billing Alerts |
+|----------|----------------------|--------------|----------------|
+| **Google Gemini** | Generative Language API only | Quarterly | Set budget cap in Google Cloud Console |
+| **Anthropic Claude** | Default API key (no admin) | Quarterly | Set spending limit in Anthropic Console |
+| **OpenAI GPT** | Standard API key, no org admin | Quarterly | Set hard limit in OpenAI billing settings |
+
+- Store all API keys in `.env` (gitignored), never in source code or configuration files
+- Use separate API keys for evaluation vs. production workloads
+- Monitor API usage dashboards after each benchmark run for unexpected charges
+- Set per-provider spending limits before running full benchmark suites
+
+### Benchmark Data Sensitivity
+
+Test prompts and evaluation datasets may contain content that requires careful handling:
+
+- **Safety testing prompts** — Category 6 (Safety & Guardrails) includes prompts designed to test refusal behavior and jailbreak resistance. These prompts are benign test cases, not actual harmful content, but should not be shared outside the evaluation context.
+- **Document analysis test data** — Category 3 test cases use synthetic documents (invoices, contracts, emails). Never use real documents containing actual PII or business-sensitive information as test fixtures.
+- **Evaluation results** — Benchmark results may reveal model capabilities and limitations. Consider whether sharing detailed safety test results publicly could enable adversarial use.
+
+### Local Model Security
+
+Ollama runs a local HTTP server on `localhost:11434` with no authentication by default:
+
+- **Network exposure** — Verify Ollama binds to `127.0.0.1`, not `0.0.0.0`. An exposed Ollama instance allows anyone on the network to run inference.
+- **Model integrity** — Models downloaded via `ollama pull` are not cryptographically verified against a known-good hash. If model integrity is critical, verify model checksums manually.
+- **Resource exhaustion** — Loading large models (70B+) can consume all available RAM. The hardware profiler's `can_run_model_size()` function checks available memory before loading, but does not enforce hard limits.
+
+### Evaluation Environment Isolation
+
+For the most reliable and secure benchmark results:
+
+- Run evaluations on a dedicated machine or in a clean user session
+- Close unnecessary applications to reduce interference and attack surface
+- Disconnect from unnecessary network services during local-only evaluation
+- Use a dedicated API key for evaluation that can be revoked independently
+
+---
+
+*Security policy for AI_Eval. Review before contributing or running evaluations with sensitive data.*

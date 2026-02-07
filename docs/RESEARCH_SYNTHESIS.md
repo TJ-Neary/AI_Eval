@@ -1,40 +1,43 @@
-# AI Research Synthesis: Key Improvements for AI_Eval
+# AI_Eval Research Synthesis
 
-> **Sources**: Claude_Research.md, Gemini_Research.md, ChatGPT_Research.md
-> **Synthesized**: 2026-02-02
+> **Purpose**: Synthesized findings from multi-source research on LLM evaluation methodology, benchmarking best practices, hardware profiling, and scoring rigor. These findings directly informed technical decisions TD-010 through TD-013 in the [DevPlan](../DevPlan.md).
+>
+> **Sources**: Independent research sessions conducted with Claude (Anthropic), Gemini (Google), and ChatGPT (OpenAI) — each tasked with reviewing the AI_Eval architecture and identifying gaps against current industry practices.
+>
+> **Date**: 2026-02-02
 
 ---
 
 ## Executive Summary
 
-All three AI research documents converge on several critical themes that are **missing or underdeveloped** in the current AI_Eval DevPlan. This synthesis identifies the highest-priority additions.
+All three research sources converge on several critical themes that were missing or underdeveloped in the initial AI_Eval design. The most significant findings relate to statistical rigor requirements (naive mean/std dev is insufficient for reliable model comparison), benchmark contamination risks (11-22% performance inflation on widely-seen datasets), and LLM-as-Judge bias patterns (position, verbosity, and self-evaluation biases). These findings have been incorporated into the development plan as technical decisions TD-010 through TD-013.
 
 ---
 
-## Gaps Identified in Current DevPlan
+## Gaps Identified in Initial Design
 
-### 🔴 Critical Gaps (Must Add)
+### Critical Priority
 
-| Gap | Current State | Research Finding |
+| Gap | Initial State | Research Finding |
 |-----|---------------|------------------|
 | **Statistical Rigor** | Basic mean ± std dev | Need 800+ samples for 3% effect detection, clustered SEs, confidence intervals |
 | **Benchmark Contamination** | Not addressed | 11-22% performance inflation on contaminated data; need ITD decontamination |
 | **LLM-as-Judge Bias** | Not addressed | Position bias, verbosity bias, self-evaluation bias all documented |
 | **Drift Detection** | Not addressed | 75% of LLM deployments show degradation without monitoring |
-| **TCO Break-Even Calculator** | Mentioned but not spec'd | Clear thresholds: <10K/mo → API, >100K/mo → local |
+| **TCO Break-Even Calculator** | Mentioned but not specified | Clear thresholds: <10K/mo favors API, >100K/mo favors local |
 | **Memory Bandwidth Metrics** | Not tracked | Key bottleneck for local inference; more important than compute |
-| **Thermal Throttle Testing** | Not addressed | Consumer GPUs lose 30% speed after 5+ min; need soak tests |
+| **Thermal Throttle Testing** | Not addressed | Consumer GPUs lose 30% speed after 5+ min; soak testing required |
 
-### 🟡 Important Gaps (Should Add)
+### Important Priority
 
 | Gap | Research Finding |
 |-----|------------------|
 | **RAG Evaluation (RAGAS)** | Faithfulness, Answer Relevancy, Context Precision, Context Recall |
 | **Calibration Testing** | Does model confidence correlate with correctness? |
-| **Quantization Comparison** | Q5_K_M is optimal (65% size reduction, 97-98% quality) |
-| **Needle-in-Haystack** | Test actual vs. claimed context window |
+| **Quantization Comparison** | Q5_K_M is optimal (65% size reduction, 97-98% quality retention) |
+| **Needle-in-Haystack** | Test actual vs. claimed context window capacity |
 | **Multi-Language Testing** | 30%+ performance gap between English and low-resource languages |
-| **Cold Start vs Hot Start** | Loading 70B model takes 8-13 seconds |
+| **Cold Start vs Hot Start** | Loading 70B model takes 8-13 seconds; must measure separately |
 | **Carbon/Energy Tracking** | Up to 70x difference in energy per query between models |
 
 ---
@@ -269,10 +272,21 @@ The following items from the research are valuable but **deferred to later phase
 
 ---
 
-## Next Steps
+## Integration Status
 
-1. ✅ Update DevPlan with TD-010 through TD-013
-2. ✅ Elevate RAG/RAGAS to High priority
-3. Add prompt engineering research and testing
-4. Add new metrics to TEST_SUITE_SPEC.md
-5. Update phases with new features
+The following items from this research have been incorporated into the development plan:
+
+| Finding | Action Taken | Reference |
+|---------|-------------|-----------|
+| Statistical rigor requirements | Added as TD-010 | [DevPlan.md — TD-010](../DevPlan.md#td-010-statistical-rigor-requirements) |
+| LLM-as-Judge bias mitigation | Added as TD-011, implemented in `src/scoring/llm_judge.py` | [DevPlan.md — TD-011](../DevPlan.md#td-011-llm-as-judge-bias-mitigation) |
+| Hardware profiling & thermal testing | Added as TD-012 | [DevPlan.md — TD-012](../DevPlan.md#td-012-hardware-profiling--thermal-testing) |
+| Benchmark contamination strategy | Added as TD-013 | [DevPlan.md — TD-013](../DevPlan.md#td-013-benchmark-contamination-strategy) |
+| RAG evaluation (RAGAS) | Elevated to high priority, implemented via DeepEval in `src/scoring/rag_metrics.py` | Phase 2.5 in DevPlan |
+| Memory bandwidth utilization | Added to Phase 2 metrics | TD-012 |
+
+### Pending Integration
+
+- Prompt engineering sensitivity testing (Category 7 proposal)
+- Additional metrics in TEST_SUITE_SPEC.md (calibration, drift monitoring)
+- TCO break-even calculator CLI command

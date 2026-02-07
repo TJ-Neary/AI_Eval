@@ -1,7 +1,8 @@
 # AI_Eval — Development Plan
 
-> LLM evaluation and benchmarking tool for comparing local and API models.
-> Exports results to `_HQ/evaluations/` for cross-project model selection.
+> Comprehensive development roadmap for AI_Eval, an LLM evaluation and benchmarking framework. This document covers architecture decisions, implementation phases, research synthesis, and task tracking for the full project lifecycle — from MVP through commercial readiness.
+
+**Current Phase:** MVP — Core evaluation infrastructure (providers, scoring, benchmarks, hardware profiling) is implemented. Reporting, export, and additional API providers are next.
 
 ---
 
@@ -431,7 +432,7 @@ Items required before public release (OSS or commercial):
 
 | Item | Status | Priority |
 |------|--------|----------|
-| **Licensing decision** (MIT, Apache, proprietary) | Not Started | Critical |
+| **Licensing decision** (MIT, Apache, proprietary) | Done (MIT) | Critical |
 | **Project name/branding** | Using "AI_Eval" | Medium |
 | **Documentation site** | Not Started | High |
 | **JSON schema versioning** | Not Started | High |
@@ -877,4 +878,4 @@ Files in `~/Tech_Projects/_HQ/evaluations/` that AI_Eval will create or update:
 
 ---
 
-*Last updated: 2026-02-05*
+*Last updated: 2026-02-07*
