@@ -207,10 +207,14 @@ AI_Eval/
 │   │   └── rag_metrics.py      #   DeepEval RAG evaluation metrics
 │   ├── profiling/              # Hardware detection and resource monitoring
 │   │   └── hardware.py         #   Platform-aware hardware profiling
-│   ├── reporting/              # Report generation (planned)
+│   ├── reporting/              # Report generation
+│   │   ├── report_generator.py #   Jinja2-based markdown/JSON report generation
+│   │   ├── readme_updater.py   #   README.md results table updater
+│   │   └── templates/          #   Jinja2 report templates
 │   └── export/                 # Catalog export (planned)
 ├── utils/                      # Shared utilities
-│   ├── exceptions.py           #   Custom exception hierarchy (AiEvalError base)
+│   ├── exceptions.py           #   Custom exception hierarchy (AiEvalError base, ReportingError)
+│   ├── marker_parser.py        #   Marker-based content replacement for catalog updates
 │   ├── logging_config.py       #   Multi-handler structured logging
 │   ├── retry.py                #   Retry with backoff, circuit breaker, retry budget
 │   ├── rate_limiter.py         #   Sliding window API rate limiting
@@ -231,6 +235,17 @@ AI_Eval/
 
 ---
 
+## Benchmark Results
+
+<!-- AI_EVAL:BEGIN -->
+| Model | Provider | Score | Tokens/sec | Pass Rate | Hardware | Date |
+|-------|----------|-------|------------|-----------|----------|------|
+| [llama3.1:8b](reports/llama3.1_8b_20260207_042743.md) | OLLAMA | 66.0 | 88.8 | 4/5 | Apple M4 Max (48GB) | 2026-02-07 |
+
+<!-- AI_EVAL:END -->
+
+---
+
 ## Development Status
 
 AI_Eval is in **active development**. The core evaluation infrastructure — provider abstraction, benchmark runner, scoring engine, and hardware detection — is implemented and functional. Reporting, export, and additional API providers are the next development priorities.
@@ -247,7 +262,7 @@ AI_Eval is in **active development**. The core evaluation infrastructure — pro
 | Scoring — RAG metrics | Complete | DeepEval integration (RAGAS) |
 | Hardware detection | Complete | Apple Silicon, NVIDIA, AMD, CPU fallback |
 | CLI | Functional | Core commands working, config loading in progress |
-| Reporting | Not started | Jinja2 template-based report generation |
+| Reporting | Complete | Jinja2 markdown/JSON reports, README results table |
 | Catalog export | Not started | Marker-based catalog file updates |
 
 See [DevPlan.md](DevPlan.md) for the full development roadmap, technical decisions (TD-001 through TD-013), and task tracker.

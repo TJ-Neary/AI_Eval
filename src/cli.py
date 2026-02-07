@@ -109,13 +109,34 @@ async def cmd_run(args: argparse.Namespace) -> int:
         config=config,
     )
 
-    # Save results
+    # Save raw JSON results
     if args.output:
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w") as f:
             json.dump(result.to_dict(), f, indent=2)
         console.print(f"\n[green]Results saved to {output_path}[/green]")
+
+    # Generate report
+    report_path = None
+    if not args.no_report:
+        from .reporting import ReportGenerator, ReportConfig
+
+        report_config = ReportConfig(
+            report_dir=Path(args.report_dir),
+            formats=["markdown", "json"],
+        )
+        generator = ReportGenerator(config=report_config)
+        report_path = generator.generate(result)
+        console.print(f"[green]Report saved to {report_path}[/green]")
+
+    # Update README with results table
+    if not args.no_readme:
+        from .reporting import update_readme_results
+
+        readme_path = Path("README.md")
+        if update_readme_results(result, readme_path=readme_path, report_path=report_path):
+            console.print(f"[green]README.md updated with results[/green]")
 
     return 0
 
@@ -265,6 +286,9 @@ def main() -> int:
     run_parser.add_argument("--repetitions", type=int, default=1, help="Repetitions per test")
     run_parser.add_argument("--timeout", type=float, default=120, help="Timeout in seconds")
     run_parser.add_argument("--no-judge", action="store_true", help="Disable LLM-as-Judge")
+    run_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
+    run_parser.add_argument("--no-readme", action="store_true", help="Skip README update")
+    run_parser.add_argument("--report-dir", default="./reports", help="Report output directory")
 
     # compare
     compare_parser = subparsers.add_parser("compare", help="Compare multiple models")
