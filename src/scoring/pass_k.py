@@ -21,12 +21,11 @@ Usage:
 """
 
 import logging
-import math
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 import numpy as np
 
@@ -77,9 +76,7 @@ def calculate_pass_at_k(n: int, c: int, k: int) -> float:
     return 1.0 - result
 
 
-def calculate_pass_at_k_batch(
-    results: List[List[bool]], k_values: List[int]
-) -> Dict[int, float]:
+def calculate_pass_at_k_batch(results: List[List[bool]], k_values: List[int]) -> Dict[int, float]:
     """
     Calculate pass@k for a batch of problems, each with multiple samples.
 

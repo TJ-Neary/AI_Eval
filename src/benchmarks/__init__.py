@@ -21,20 +21,19 @@ Usage:
 """
 
 from .datasets import (
-    Dataset,
-    TestCase,
-    BenchmarkSuite,
-    DatasetManager,
     QUICK_TEST_DATASET,
+    BenchmarkSuite,
+    Dataset,
+    DatasetManager,
+    TestCase,
 )
-
 from .runner import (
-    BenchmarkRunner,
     BenchmarkResult,
+    BenchmarkRunner,
     CategoryResult,
+    RunConfig,
     TestResult,
     TestStatus,
-    RunConfig,
 )
 
 __all__ = [

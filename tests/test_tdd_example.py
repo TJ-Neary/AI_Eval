@@ -9,7 +9,6 @@ Delete or replace this file once real TDD tests are in place.
 
 import pytest
 
-
 # =============================================================================
 # Example 1: TDD for a New Feature
 # =============================================================================
@@ -91,12 +90,15 @@ class TestDataTransformation:
     Run all cases (RED). Implement until all pass (GREEN).
     """
 
-    @pytest.mark.parametrize("input_val,expected", [
-        ("hello world", "Hello World"),          # basic title case
-        ("ALREADY UPPER", "Already Upper"),       # handles all-caps
-        ("multiple   spaces", "Multiple Spaces"), # normalizes whitespace
-        ("", ""),                                  # empty string edge case
-    ])
+    @pytest.mark.parametrize(
+        "input_val,expected",
+        [
+            ("hello world", "Hello World"),  # basic title case
+            ("ALREADY UPPER", "Already Upper"),  # handles all-caps
+            ("multiple   spaces", "Multiple Spaces"),  # normalizes whitespace
+            ("", ""),  # empty string edge case
+        ],
+    )
     def test_normalize_title(self, input_val, expected):
         """RED: All cases fail until normalize_title is implemented."""
         # from src.utils.text import normalize_title

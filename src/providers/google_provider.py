@@ -76,9 +76,7 @@ class GoogleProvider(BaseProvider):
             return
 
         if not self._api_key:
-            raise ValueError(
-                "Google API key required. Set GOOGLE_API_KEY env var or pass api_key."
-            )
+            raise ValueError("Google API key required. Set GOOGLE_API_KEY env var or pass api_key.")
 
         try:
             from google import genai
@@ -129,9 +127,7 @@ class GoogleProvider(BaseProvider):
             # Extract token counts from usage metadata
             usage = getattr(response, "usage_metadata", None)
             prompt_tokens = getattr(usage, "prompt_token_count", 0) if usage else 0
-            completion_tokens = (
-                getattr(usage, "candidates_token_count", 0) if usage else 0
-            )
+            completion_tokens = getattr(usage, "candidates_token_count", 0) if usage else 0
             total_tokens = prompt_tokens + completion_tokens
 
             tokens_per_second = calculate_tokens_per_second(completion_tokens, duration_ms)
@@ -222,9 +218,7 @@ class GoogleProvider(BaseProvider):
             # Extract token counts
             usage = getattr(response, "usage_metadata", None)
             prompt_tokens = getattr(usage, "prompt_token_count", 0) if usage else 0
-            completion_tokens = (
-                getattr(usage, "candidates_token_count", 0) if usage else 0
-            )
+            completion_tokens = getattr(usage, "candidates_token_count", 0) if usage else 0
             total_tokens = prompt_tokens + completion_tokens
 
             tokens_per_second = calculate_tokens_per_second(completion_tokens, duration_ms)

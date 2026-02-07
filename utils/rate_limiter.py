@@ -64,9 +64,7 @@ class RateLimiter:
 
         limit = self._limits.get(operation, self._limits.get("default", 100))
         if len(bucket) >= limit:
-            logger.warning(
-                f"Rate limited: '{operation}' ({len(bucket)}/{limit} per minute)"
-            )
+            logger.warning(f"Rate limited: '{operation}' ({len(bucket)}/{limit} per minute)")
             return False
 
         bucket.append(now)

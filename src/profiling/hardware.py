@@ -18,13 +18,12 @@ Usage:
 """
 
 import logging
-import os
 import platform
 import re
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict
 
 import psutil
 
@@ -134,9 +133,6 @@ class HardwareProfile:
         # Rule of thumb: Q4 quantization uses ~0.5GB per billion parameters
         # Plus ~2GB overhead for KV cache at reasonable context
         estimated_ram_q4 = (params_billions * 0.5) + 2
-
-        # Q8 uses ~1GB per billion parameters
-        estimated_ram_q8 = (params_billions * 1.0) + 2
 
         # Check against available RAM (leave 4GB for system)
         usable_ram = self.ram_gb - 4
@@ -256,10 +252,10 @@ def detect_hardware() -> HardwareProfile:
     # Check for MLX support (Apple Silicon only)
     if profile.chip_type == ChipType.APPLE_SILICON:
         try:
-            import mlx.core
+            import importlib.util
 
-            profile.supports_mlx = True
-        except ImportError:
+            profile.supports_mlx = importlib.util.find_spec("mlx.core") is not None
+        except (ImportError, ModuleNotFoundError):
             profile.supports_mlx = False
 
     return profile
@@ -440,7 +436,6 @@ def _detect_windows_gpu(profile: HardwareProfile) -> None:
             capture_output=True,
             text=True,
             timeout=5,
-            shell=True,
         )
         if result.returncode == 0:
             parts = result.stdout.strip().split(", ")
@@ -460,10 +455,13 @@ def _detect_windows_gpu(profile: HardwareProfile) -> None:
             capture_output=True,
             text=True,
             timeout=5,
-            shell=True,
         )
         if result.returncode == 0:
-            lines = [l.strip() for l in result.stdout.split("\n") if l.strip() and l.strip() != "Name"]
+            lines = [
+                ln.strip()
+                for ln in result.stdout.split("\n")
+                if ln.strip() and ln.strip() != "Name"
+            ]
             if lines:
                 profile.chip_name = lines[0]
                 if "NVIDIA" in profile.chip_name:

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class RetryConfig:
     """Configuration for retry behavior."""
+
     max_attempts: int = 3
     initial_delay: float = 1.0
     max_delay: float = 60.0
@@ -35,11 +36,13 @@ TRANSIENT_EXCEPTIONS: Tuple[Type[Exception], ...] = (
 
 class RetryableError(Exception):
     """Mark an error as retryable."""
+
     pass
 
 
 class NonRetryableError(Exception):
     """Mark an error as non-retryable (fail immediately)."""
+
     pass
 
 
@@ -60,6 +63,7 @@ def with_retry(
         def call_api():
             return api.request()
     """
+
     def decorator(func: Callable) -> Callable:
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -75,7 +79,9 @@ def with_retry(
                 retryable_exceptions=retryable_exceptions,
                 on_retry=on_retry,
             )
+
         return wrapper
+
     return decorator
 
 
@@ -258,6 +264,7 @@ class CircuitBreaker:
 
     def __call__(self, func: Callable) -> Callable:
         """Use as decorator."""
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not self.allow_request():
@@ -269,6 +276,7 @@ class CircuitBreaker:
             except Exception:
                 self.record_failure()
                 raise
+
         return wrapper
 
 

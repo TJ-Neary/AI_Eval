@@ -396,9 +396,7 @@ class LLMJudge:
 
         return score, reasoning.strip()
 
-    def _parse_pairwise_eval(
-        self, text: str
-    ) -> Tuple[str, float, float, str]:
+    def _parse_pairwise_eval(self, text: str) -> Tuple[str, float, float, str]:
         """Parse pairwise evaluation response."""
         winner = "TIE"
         score_a = 5.0

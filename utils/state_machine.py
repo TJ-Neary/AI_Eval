@@ -29,10 +29,10 @@ Contributed by: Kendra
 """
 
 import logging
-from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Callable, Awaitable, Generic, List, Optional, TypeVar
+from enum import Enum
+from typing import Awaitable, Callable, Generic, List, Optional, TypeVar
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ S = TypeVar("S", bound=Enum)
 @dataclass
 class StateTransition(Generic[S]):
     """Records a single state transition."""
+
     from_state: S
     to_state: S
     timestamp: datetime
@@ -130,7 +131,7 @@ class StateMachine(Generic[S]):
 
         # Trim history
         if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+            self._history = self._history[-self._max_history :]
 
         logger.info(f"State: {old_state.name} -> {new_state.name} ({reason})")
 

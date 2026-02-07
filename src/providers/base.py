@@ -13,7 +13,6 @@ Usage:
 """
 
 import logging
-import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -269,9 +268,7 @@ class ProviderFactory:
         provider_class = cls._registry.get(provider_name.lower())
         if provider_class is None:
             available = ", ".join(cls._registry.keys())
-            raise ValueError(
-                f"Unknown provider '{provider_name}'. Available: {available}"
-            )
+            raise ValueError(f"Unknown provider '{provider_name}'. Available: {available}")
         return provider_class(model=model, config=config, **kwargs)
 
     @classmethod

@@ -7,8 +7,7 @@ markers in README.md so GitHub visitors see real benchmark results.
 
 import json
 import logging
-from dataclasses import asdict, dataclass, field
-from datetime import datetime
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -49,9 +48,7 @@ def _save_index(index_path: Path, entries: List[Dict[str, Any]]) -> None:
         json.dump(entries, f, indent=2)
 
 
-def _merge_result(
-    existing: List[Dict[str, Any]], new: Dict[str, Any]
-) -> List[Dict[str, Any]]:
+def _merge_result(existing: List[Dict[str, Any]], new: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Merge a new result into the index, replacing same model+provider."""
     key = (new["model"], new["provider"])
     filtered = [e for e in existing if (e["model"], e["provider"]) != key]

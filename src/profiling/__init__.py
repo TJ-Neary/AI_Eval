@@ -11,12 +11,12 @@ Usage:
 """
 
 from .hardware import (
-    detect_hardware,
-    get_memory_usage,
-    get_cpu_usage,
-    HardwareProfile,
-    ChipType,
     AppleSiliconTier,
+    ChipType,
+    HardwareProfile,
+    detect_hardware,
+    get_cpu_usage,
+    get_memory_usage,
 )
 
 __all__ = [

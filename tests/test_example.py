@@ -5,7 +5,6 @@ Delete or rename this file once real tests are in place.
 """
 
 import pytest
-from pathlib import Path
 
 
 class TestProjectSetup:
@@ -25,6 +24,7 @@ class TestProjectSetup:
     def test_environment_configured(self, mock_env):
         """Mock environment variables are set."""
         import os
+
         assert os.getenv("AI_EVAL_STATE_DIR") is not None
         assert os.getenv("LOG_LEVEL") == "DEBUG"
 
@@ -35,11 +35,14 @@ class TestExampleUnit:
     def test_addition(self):
         assert 1 + 1 == 2
 
-    @pytest.mark.parametrize("input_val,expected", [
-        ("hello", 5),
-        ("", 0),
-        ("world!", 6),
-    ])
+    @pytest.mark.parametrize(
+        "input_val,expected",
+        [
+            ("hello", 5),
+            ("", 0),
+            ("world!", 6),
+        ],
+    )
     def test_string_length(self, input_val, expected):
         assert len(input_val) == expected
 
