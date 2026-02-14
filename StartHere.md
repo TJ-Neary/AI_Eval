@@ -6,11 +6,11 @@
 
 **AI_Eval** is an LLM evaluation and benchmarking framework that compares local models (Ollama) against cloud APIs (Google Gemini, Anthropic Claude, OpenAI GPT) across standardized test suites. It generates hardware-aware recommendations using three scoring methodologies (pass@k, LLM-as-Judge, RAG metrics) and produces fitness scores weighted to specific deployment use cases.
 
-**Status**: Active development — providers (Ollama, Google), scoring (pass@k, LLM-as-Judge, RAG/DeepEval), benchmark runner, and hardware profiling are implemented. Reporting and export are next.
+**Status**: Stable — all core subsystems complete. Provider layer, scoring engine, benchmark runner, hardware profiling, evaluation workflow, reporting, and catalog export are implemented.
 
 **Quick orientation**: Start with the [README](./README.md) for features and installation, then review the [Architecture](#system-architecture) section below for the full component map.
 
-**Last Updated**: 2026-02-07
+**Last Updated**: 2026-02-14
 
 ---
 
@@ -80,8 +80,8 @@
      ├──────────────────────────┤    ├──────────────────────────┤    ├──────────────────────────┤
      │ • OllamaProvider (local) │    │ • BenchmarkRunner        │    │ • detect_hardware()      │
      │ • GoogleProvider (API)   │    │ • DatasetManager         │    │ • HardwareProfile        │
-     │ • [Anthropic] (planned)  │    │ • YAML test suites       │    │ • Apple Silicon tiers    │
-     │ • [OpenAI] (planned)     │    │                          │    │ • NVIDIA/AMD detection   │
+     │ • [Anthropic] (extend)   │    │ • YAML test suites       │    │ • Apple Silicon tiers    │
+     │ • [OpenAI] (extend)      │    │                          │    │ • NVIDIA/AMD detection   │
      └──────────────────────────┘    └──────────────────────────┘    └──────────────────────────┘
                     │                              │                              │
                     │                              ▼                              │
@@ -97,17 +97,28 @@
                     └──────────────────────────────┼──────────────────────────────┘
                                                    ▼
      ┌──────────────────────────┐    ┌──────────────────────────┐    ┌──────────────────────────┐
-     │       Reporting          │    │         Export           │    │        Utilities         │
-     │    src/reporting/        │    │      src/export/         │    │         utils/           │
-     │      [PLANNED]           │    │      [PLANNED]           │    ├──────────────────────────┤
-     │ • Jinja2 templates       │    │ • MODEL_CATALOG.md       │    │ ✓ logging_config.py      │
-     │ • Markdown/JSON output   │    │ • DECISION_MATRIX.md     │    │ ✓ exceptions.py          │
-     │                          │    │ • Marker-based updates   │    │ ✓ retry.py               │
-     └──────────────────────────┘    └──────────────────────────┘    │ ○ rate_limiter.py        │
-                                                                     │ ○ state_machine.py       │
-                                                                     │ ○ plugin_loader.py       │
-                                                                     └──────────────────────────┘
-                                                                        ✓ = Wired  ○ = Orphaned
+     │       Evaluation         │    │       Reporting          │    │         Export           │
+     │    src/evaluation/       │    │    src/reporting/        │    │      src/export/         │
+     ├──────────────────────────┤    ├──────────────────────────┤    ├──────────────────────────┤
+     │ • Config (YAML loader)   │    │ • Jinja2 templates       │    │ • MODEL_CATALOG.md       │
+     │ • EvaluationRunner       │    │ • Markdown/JSON output   │    │ • DECISION_MATRIX.md     │
+     │ • Custom scorers         │    │ • README updater         │    │ • Marker-based updates   │
+     │ • Model discovery        │    │                          │    │                          │
+     └──────────────────────────┘    └──────────────────────────┘    └──────────────────────────┘
+
+     ┌──────────────────────────┐
+     │        Utilities         │
+     │         utils/           │
+     ├──────────────────────────┤
+     │ ✓ logging_config.py      │
+     │ ✓ exceptions.py          │
+     │ ✓ retry.py               │
+     │ ✓ marker_parser.py       │
+     │ ○ rate_limiter.py        │
+     │ ○ state_machine.py       │
+     │ ○ plugin_loader.py       │
+     └──────────────────────────┘
+        ✓ = Wired  ○ = Reference implementations
 ```
 
 ---
@@ -118,7 +129,7 @@
 
 | Directory/File | Purpose | Key Classes/Functions | Status |
 |----------------|---------|----------------------|--------|
-| `src/cli.py` | CLI entry point | `cmd_quick_test()`, `cmd_run()`, `cmd_compare()`, `cmd_hardware()`, `main()` | **Wired** |
+| `src/cli.py` | CLI entry point | `cmd_quick_test()`, `cmd_run()`, `cmd_compare()`, `cmd_hardware()`, `cmd_models()`, `cmd_evaluate()`, `main()` | **Wired** |
 | `src/__main__.py` | Package entry point | Imports and runs `main()` | **Wired** |
 
 ### Provider Layer (src/providers/)
@@ -150,12 +161,29 @@
 |------|---------|-------------|--------|
 | `hardware.py` | Hardware detection | `detect_hardware()`, `HardwareProfile`, `ChipType`, `AppleSiliconTier`, `get_memory_usage()`, `can_run_model_size()` | **Wired** |
 
-### Planned Modules
+### Evaluation Layer (src/evaluation/)
 
-| Directory | Purpose | Status |
-|-----------|---------|--------|
-| `src/reporting/` | Jinja2 report generation (markdown/JSON) | **Planned** (directory exists, empty) |
-| `src/export/` | Export to `_HQ/evaluations/` with markers | **Planned** (directory exists, empty) |
+| File | Purpose | Key Classes | Status |
+|------|---------|-------------|--------|
+| `config.py` | YAML config loading | `EvalRequestConfig`, `Scenario`, `AcceptanceCriterion`, `ScorerConfig` | **Wired** |
+| `runner.py` | Evaluation orchestration | `EvaluationRunner` — candidate testing, acceptance criteria, result aggregation | **Wired** |
+| `scorers.py` | Custom scorers | `JsonValidityScorer`, `LatencyScorer`, `PatternAccuracyScorer`, `CitationAccuracyScorer`, `VerbatimQuoteScorer` | **Wired** |
+| `model_discovery.py` | Model catalog management | `ModelCatalog`, `ModelEntry` — Ollama integration, version detection, classification | **Wired** |
+| `report.py` | Evaluation report generator | `EvaluationReportGenerator` — Jinja2-based evaluation reports | **Wired** |
+
+### Reporting Layer (src/reporting/)
+
+| File | Purpose | Key Classes | Status |
+|------|---------|-------------|--------|
+| `report_generator.py` | Jinja2 report generation | `ReportGenerator` — markdown/JSON benchmark reports | **Wired** |
+| `readme_updater.py` | README results table updater | `ReadmeUpdater` — marker-based results table updates | **Wired** |
+| `templates/` | Jinja2 templates | Benchmark and evaluation report templates | **Wired** |
+
+### Export Layer (src/export/)
+
+| File | Purpose | Key Classes | Status |
+|------|---------|-------------|--------|
+| `catalog_exporter.py` | Catalog export | `CatalogExporter` — marker-based updates to MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES | **Wired** |
 
 ### Utilities (utils/)
 
@@ -180,66 +208,52 @@
 | File | Purpose | Status |
 |------|---------|--------|
 | `conftest.py` | Shared pytest fixtures | `tmp_project_dir`, `mock_env`, `sample_text`, `sample_file` | **Wired** |
-| `test_example.py` | Placeholder tests | `TestProjectSetup`, `TestExampleUnit` — to be replaced | **Placeholder** |
+| `test_tdd_example.py` | TDD methodology demo | Demonstrates Red-Green-Refactor cycle | **Documentation** |
+| `test_eval_config.py` | Evaluation config tests | 15 tests for YAML loading, validation | **Wired** |
+| `test_eval_runner.py` | Evaluation runner tests | 12 tests for orchestration, criteria | **Wired** |
+| `test_eval_scorers.py` | Custom scorer tests | 32 tests for all 5 scorers | **Wired** |
+| `test_eval_report.py` | Eval report tests | 6 tests for report generation | **Wired** |
+| `test_model_discovery.py` | Model discovery tests | 31 tests for catalog, classification | **Wired** |
+| `test_catalog_exporter.py` | Export tests | 45 tests for marker-based catalog export | **Wired** |
+| `test_report_generator.py` | Report tests | 21 tests for Jinja2 reporting | **Wired** |
+| `test_readme_updater.py` | README updater tests | 16 tests for results table updates | **Wired** |
+| `test_marker_parser.py` | Marker parser tests | 17 tests for marker matching | **Wired** |
 
 ---
 
 ## Known Issues & Discrepancies
 
-| Issue | Location | Description | Recommendation |
-|-------|----------|-------------|----------------|
-| Orphaned utilities | `utils/rate_limiter.py`, `utils/state_machine.py`, `utils/plugin_loader.py` | Implemented but never imported | Integrate into providers (rate limiting), runner (state machine), or document as optional |
-| Empty directories | `src/reporting/`, `src/export/` | Directories exist but contain no code | Implement per DevPlan Phase 3 |
-| Hardcoded dataset | `src/cli.py:108` | TODO comment — loads `QUICK_TEST_DATASET` instead of config | Load from `RunConfig` or `configs/default.yaml` |
-| Placeholder tests | `tests/test_example.py` | Example tests only | Add unit tests for providers, scoring, benchmarks |
-| Missing providers | `ProviderType` enum | ANTHROPIC, OPENAI defined but not implemented | Implement in Phase 2 |
+| Issue | Location | Description | Status |
+|-------|----------|-------------|--------|
+| Reference utilities | `utils/rate_limiter.py`, `state_machine.py`, `plugin_loader.py` | Implemented but not wired into main codebase | Documented as reference implementations |
+| Extensible providers | `ProviderType` enum | ANTHROPIC, OPENAI defined but not implemented | Architecture supports extension via `BaseProvider` |
 
 ---
 
 ## Development Status
 
-| Phase | Target | Key Deliverables | Status |
-|-------|--------|------------------|--------|
-| **MVP** | Personal Mac, RAG testing | Provider layer, scoring module, benchmark runner, hardware detection | **In Progress** |
-| **Phase 2** | Multi-provider | Anthropic + OpenAI providers, reporting, export | Planned |
-| **Phase 3** | Family machines | Windows support, NVIDIA/AMD optimization | Planned |
-| **Phase 4** | Consulting clients | Multi-tenancy, dashboards | Planned |
-| **Phase 5+** | Commercial | SaaS deployment, paid tiers | Future |
+All core subsystems are complete. The framework is stable and suitable for production evaluation workflows.
 
-### Implemented Components
-
-| Component | Completion | Notes |
-|-----------|------------|-------|
-| Provider abstraction | 100% | BaseProvider + Factory pattern |
-| Ollama provider | 100% | Async generate/chat with metrics |
-| Google provider | 100% | Gemini API integration |
-| Scoring — pass@k | 100% | HumanEval methodology |
-| Scoring — LLM-as-Judge | 100% | TD-011 bias mitigation |
-| Scoring — RAG metrics | 100% | DeepEval integration |
-| Hardware detection | 100% | Apple Silicon, NVIDIA, AMD, CPU |
-| Benchmark runner | 100% | Warmup, concurrent execution |
-| CLI | 80% | Commands work, config loading incomplete |
-| Reporting | 0% | Not started |
-| Export | 0% | Not started |
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Provider abstraction | Complete | BaseProvider + Factory pattern |
+| Ollama provider | Complete | Async generate/chat with metrics |
+| Google provider | Complete | Gemini API integration |
+| Scoring — pass@k | Complete | HumanEval methodology |
+| Scoring — LLM-as-Judge | Complete | TD-011 bias mitigation |
+| Scoring — RAG metrics | Complete | DeepEval integration |
+| Hardware detection | Complete | Apple Silicon, NVIDIA, AMD, CPU |
+| Benchmark runner | Complete | Warmup, concurrent execution |
+| Evaluation workflow | Complete | Config-driven runner, custom scorers, model discovery |
+| CLI | Complete | 7 commands: run, quick-test, compare, list-models, hardware, models, evaluate |
+| Reporting | Complete | Jinja2 markdown/JSON reports, README results table |
+| Catalog export | Complete | Marker-based updates to MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES |
 
 ---
 
 ## Roadmap
 
-Full roadmap in [DevPlan.md](./DevPlan.md). Summary:
-
-| Priority | Item | Status |
-|----------|------|--------|
-| P0 | Provider abstraction layer | Done |
-| P0 | Scoring module (pass@k, LLM-Judge, RAG) | Done |
-| P0 | Hardware detection | Done |
-| P0 | Benchmark runner | Done |
-| P1 | Config-driven dataset loading | TODO |
-| P1 | Reporting module (Jinja2) | Not started |
-| P1 | Export to `_HQ/evaluations/` | Not started |
-| P2 | Anthropic provider | Not started |
-| P2 | OpenAI provider | Not started |
-| P2 | Real test suite | Not started |
+Core development is complete. The architecture is extensible for future providers and scoring methods. See [DevPlan.md](./DevPlan.md) for the full development history and technical decisions (TD-001 through TD-013).
 
 ---
 
@@ -285,6 +299,12 @@ python -m src list-models --provider ollama
 
 # Show hardware profile
 python -m src hardware
+
+# Manage model catalog
+python -m src models --discover --provider ollama
+
+# Run config-driven evaluation
+python -m src evaluate --config evaluations/requests/my-request.yaml
 ```
 
 ### Key Entry Points
@@ -326,7 +346,7 @@ python -m src hardware
 | Cloud APIs | google-genai, anthropic, openai | Latest |
 | RAG Metrics | DeepEval | RAGAS integration |
 | Hardware | psutil | Cross-platform |
-| Templates | Jinja2 | For reporting (planned) |
+| Templates | Jinja2 | Report generation |
 | CLI Output | rich, tabulate | Colored terminal |
 | HTTP | httpx | Async HTTP client |
 | Testing | pytest | pytest-asyncio, pytest-cov |
@@ -380,4 +400,4 @@ AI_Eval generates and maintains the following shared evaluation files:
 
 ---
 
-*Updated 2026-02-07*
+*Updated 2026-02-14*
