@@ -147,7 +147,10 @@ async def cmd_run(args: argparse.Namespace) -> int:
     if not args.no_export:
         from .export import ExportConfig, export_to_catalog
 
-        export_config = ExportConfig()
+        export_config = ExportConfig(
+            requesting_project=args.requested_by,
+            use_case=args.use_case,
+        )
         outcomes = export_to_catalog(result, config=export_config, report_path=report_path)
         if any(outcomes.values()):
             updated = [k for k, v in outcomes.items() if v]
@@ -279,6 +282,162 @@ async def cmd_hardware(args: argparse.Namespace) -> int:
     return 0
 
 
+async def cmd_models(args: argparse.Namespace) -> int:
+    """Manage model catalog."""
+    from .evaluation.model_discovery import (
+        ModelCatalog,
+        check_for_updates,
+        refresh_local_models,
+    )
+
+    action = args.action
+
+    if action == "refresh":
+        console.print("[cyan]Refreshing model catalog...[/cyan]")
+        catalog = await refresh_local_models()
+        local = [m for m in catalog.models if m.is_local]
+        console.print(f"[green]Catalog updated: {len(local)} local models[/green]")
+
+        table = Table(title="Local Models")
+        table.add_column("Model", style="cyan")
+        table.add_column("Size", style="green")
+        table.add_column("Params", style="yellow")
+        table.add_column("Capabilities", style="blue")
+
+        for m in sorted(local, key=lambda x: x.size_gb, reverse=True):
+            table.add_row(
+                m.name,
+                f"{m.size_gb:.1f} GB",
+                m.parameter_count or "—",
+                ", ".join(m.capabilities),
+            )
+        console.print(table)
+
+    elif action == "search":
+        catalog = ModelCatalog.load()
+        if not catalog.models:
+            console.print("[yellow]Catalog is empty. Run 'models refresh' first.[/yellow]")
+            return 0
+
+        results = catalog.search(
+            capability=args.capability,
+            max_size_gb=args.max_size,
+            min_size_gb=args.min_size,
+            local_only=args.local_only,
+        )
+
+        if not results:
+            console.print("[yellow]No models match the criteria.[/yellow]")
+            return 0
+
+        table = Table(title="Search Results")
+        table.add_column("Model", style="cyan")
+        table.add_column("Size", style="green")
+        table.add_column("Params", style="yellow")
+        table.add_column("Capabilities", style="blue")
+        table.add_column("Local", style="dim")
+
+        for m in results:
+            table.add_row(
+                m.name,
+                f"{m.size_gb:.1f} GB",
+                m.parameter_count or "—",
+                ", ".join(m.capabilities),
+                "yes" if m.is_local else "no",
+            )
+        console.print(table)
+
+    elif action == "check-updates":
+        catalog = ModelCatalog.load()
+        if not catalog.models:
+            console.print("[yellow]Catalog is empty. Run 'models refresh' first.[/yellow]")
+            return 0
+
+        current = [m.name for m in catalog.models if m.is_local]
+        advisories = check_for_updates(catalog, current)
+
+        if not advisories:
+            console.print("[green]No updates or alternatives found.[/green]")
+        else:
+            for adv in advisories:
+                console.print(f"\n[bold]{adv['current']}[/bold]:")
+                console.print(f"  Alternatives: {', '.join(adv['alternatives'])}")
+
+    return 0
+
+
+async def cmd_evaluate(args: argparse.Namespace) -> int:
+    """Run a structured evaluation from a YAML request config."""
+    from .evaluation.config import EvalRequestConfig
+    from .evaluation.report import EvaluationReportGenerator
+    from .evaluation.runner import EvaluationRunner
+    from .reporting import ReportConfig
+
+    config_path = Path(args.config)
+    console.print(f"[cyan]Loading evaluation request: {config_path}[/cyan]")
+
+    # Load config
+    config = EvalRequestConfig.from_yaml(config_path)
+    console.print(f"[dim]Request: {config.request_id}[/dim]")
+    console.print(f"[dim]Project: {config.requesting_project}[/dim]")
+    console.print(f"[dim]Use case: {config.use_case}[/dim]")
+    console.print(f"[dim]Candidates: {', '.join(c.name for c in config.candidates)}[/dim]")
+
+    # Run evaluation
+    runner = EvaluationRunner()
+    result = await runner.run(config)
+
+    # Display results
+    console.print(f"\n[bold]{'═' * 50}[/bold]")
+    if result.recommended_model:
+        console.print(f"[green bold]Recommended: {result.recommended_model}[/green bold]")
+    else:
+        console.print("[yellow bold]No model meets all acceptance criteria[/yellow bold]")
+    console.print(f"[dim]{result.recommendation_reason}[/dim]")
+
+    # Show per-model results
+    for mr in result.model_results:
+        if mr.skipped:
+            console.print(f"\n[yellow]{mr.model}: Skipped ({mr.skip_reason})[/yellow]")
+            continue
+        status = "[green]PASS[/green]" if mr.all_criteria_passed else "[red]FAIL[/red]"
+        console.print(
+            f"\n[bold]{mr.model}[/bold]: {status} "
+            f"({mr.criteria_passed_count}/{mr.criteria_total} criteria)"
+        )
+        for cr in mr.criterion_results:
+            icon = "[green]✓[/green]" if cr.passed else "[red]✗[/red]"
+            console.print(
+                f"  {icon} {cr.criterion.name}: "
+                f"{cr.measured_value:.3f} ({cr.criterion.operator} {cr.criterion.threshold})"
+            )
+
+    # Generate report
+    if not args.no_report:
+        report_config = ReportConfig(
+            report_dir=Path(args.report_dir),
+            formats=["markdown", "json"],
+        )
+        generator = EvaluationReportGenerator(config=report_config)
+        report_path = generator.generate(result)
+        console.print(f"\n[green]Report saved to {report_path}[/green]")
+
+    # Export to catalog
+    if not args.no_export:
+        from .export import ExportConfig, export_to_catalog
+
+        for mr in result.model_results:
+            if mr.skipped or not mr.all_criteria_passed:
+                continue
+            export_config = ExportConfig(
+                requesting_project=config.requesting_project,
+                use_case=config.use_case,
+            )
+            export_to_catalog(mr.benchmark_result, config=export_config)
+
+    return 0
+
+
 def main() -> int:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -309,17 +468,48 @@ def main() -> int:
     run_parser.add_argument("--no-readme", action="store_true", help="Skip README update")
     run_parser.add_argument("--report-dir", default="./reports", help="Report output directory")
     run_parser.add_argument("--no-export", action="store_true", help="Skip catalog export to _HQ")
+    run_parser.add_argument(
+        "--requested-by", default="", help="Project that requested this evaluation"
+    )
+    run_parser.add_argument("--use-case", default="", help="Brief use case description")
 
     # compare
     compare_parser = subparsers.add_parser("compare", help="Compare multiple models")
     compare_parser.add_argument("--models", "-m", required=True, help="Comma-separated model names")
     compare_parser.add_argument("--no-judge", action="store_true", help="Disable LLM-as-Judge")
+    compare_parser.add_argument(
+        "--requested-by", default="", help="Project that requested this evaluation"
+    )
+    compare_parser.add_argument("--use-case", default="", help="Brief use case description")
 
     # list-models
     subparsers.add_parser("list-models", help="List available models")
 
     # hardware
     subparsers.add_parser("hardware", help="Show hardware profile")
+
+    # models
+    models_parser = subparsers.add_parser("models", help="Manage model catalog")
+    models_parser.add_argument(
+        "action",
+        choices=["refresh", "search", "check-updates"],
+        help="Action to perform",
+    )
+    models_parser.add_argument("--capability", help="Filter by capability (text, vision, code)")
+    models_parser.add_argument("--max-size", type=float, help="Max model size in GB")
+    models_parser.add_argument("--min-size", type=float, help="Min model size in GB")
+    models_parser.add_argument("--local-only", action="store_true", help="Only show local models")
+
+    # evaluate
+    eval_parser = subparsers.add_parser(
+        "evaluate", help="Run structured evaluation from request config"
+    )
+    eval_parser.add_argument(
+        "--config", "-c", required=True, help="Path to evaluation request YAML"
+    )
+    eval_parser.add_argument("--no-report", action="store_true", help="Skip report generation")
+    eval_parser.add_argument("--no-export", action="store_true", help="Skip catalog export to _HQ")
+    eval_parser.add_argument("--report-dir", default="./reports", help="Report output directory")
 
     args = parser.parse_args()
 
@@ -338,6 +528,10 @@ def main() -> int:
         return asyncio.run(cmd_list_models(args))
     elif args.command == "hardware":
         return asyncio.run(cmd_hardware(args))
+    elif args.command == "models":
+        return asyncio.run(cmd_models(args))
+    elif args.command == "evaluate":
+        return asyncio.run(cmd_evaluate(args))
     else:
         parser.print_help()
         return 0
