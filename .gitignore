@@ -114,6 +114,12 @@ _archive/
 reports/*
 !reports/README.md
 
+# =============================================================================
+# Evaluations (request configs + results contain project-specific data)
+# =============================================================================
+evaluations/*
+!evaluations/README.md
+
 # ============================================================================
 # Privacy Protection - Prevent accidental context leaks
 # ============================================================================
@@ -124,4 +130,7 @@ reports/*
 
 claude.md
 chatgpt.md
-gemini.md   
+gemini.md
+sessions/
+.agent/
+ANTIGRAVITY.md

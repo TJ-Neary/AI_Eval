@@ -6,6 +6,7 @@ Pushes benchmark results to _HQ/evaluations/ by:
 2. Updating MODEL_CATALOG.md with model rows in the correct section
 3. Updating DECISION_MATRIX.md with benchmark-backed recommendations
 4. Updating HARDWARE_PROFILES.md with tested configurations
+5. Updating EVALUATION_LOG.md with history entries and summary rows
 """
 
 import logging
@@ -32,7 +33,10 @@ class ExportConfig:
     update_catalog: bool = True
     update_matrix: bool = True
     update_hardware: bool = True
+    update_log: bool = True
     copy_reports: bool = True
+    requesting_project: str = ""
+    use_case: str = ""
 
 
 def _extract_param_count(model: str) -> Optional[str]:
@@ -171,6 +175,162 @@ def _render_decision_entry(result: Any) -> str:
     )
 
 
+def _render_summary_row(
+    result: Any,
+    requesting_project: str,
+    report_relpath: str,
+    scoring_config: Dict[str, Any],
+) -> str:
+    """Render a summary table row for EVALUATION_LOG.md."""
+    ram = _estimate_ram(_extract_param_count(result.model))
+    tps = f"{result.avg_tokens_per_second:.0f}"
+    score = f"{result.overall_score:.0f}"
+    date = result.timestamp.strftime("%Y-%m-%d")
+    best_for = _determine_best_for(result, scoring_config)
+    report_link = f"[report]({report_relpath})" if report_relpath else "—"
+    project = requesting_project or "—"
+
+    return (
+        f"| {result.model} | {score} | {tps} | {ram} GB "
+        f"| {best_for} | {project} | {date} | {report_link} |"
+    )
+
+
+def _render_log_entry(
+    result: Any,
+    requesting_project: str,
+    use_case: str,
+    report_relpath: str,
+    scoring_config: Dict[str, Any],
+) -> str:
+    """Render a detailed history entry for EVALUATION_LOG.md."""
+    date = result.timestamp.strftime("%Y-%m-%d")
+    score = f"{result.overall_score:.1f}"
+    rating = _score_rating(float(result.overall_score))
+    tps = f"{result.avg_tokens_per_second:.1f}"
+    ram = _estimate_ram(_extract_param_count(result.model))
+    project = requesting_project or "AI_Eval"
+    use_desc = use_case or "General evaluation"
+
+    # Category scores
+    text = _get_category_score(result, "text-generation")
+    code = _get_category_score(result, "code-generation")
+    analysis = _get_category_score(result, "document-analysis")
+    structured = _get_category_score(result, "structured-output")
+    chat = _get_category_score(result, "conversational")
+
+    # Best fitness profiles
+    category_scores = {
+        name: float(cat.avg_score) for name, cat in result.categories.items() if cat.tests
+    }
+    profiles = scoring_config.get("fitness_profiles", {})
+    fitness = _calculate_fitness_scores(category_scores, profiles)
+    fitness_str = ", ".join(
+        f"{name.replace('-', ' ').title()} {s:.1f}"
+        for name, s in sorted(fitness.items(), key=lambda x: -x[1])
+        if s >= 60
+    )
+    if not fitness_str:
+        fitness_str = "None above 60"
+
+    # Report links
+    report_md = f"[Full report]({report_relpath})" if report_relpath else "—"
+    data_relpath = (
+        report_relpath.replace("reports/", "data/").replace(".md", ".json")
+        if report_relpath
+        else ""
+    )
+    data_md = f" | [Raw data]({data_relpath})" if data_relpath else ""
+
+    lines = [
+        f"#### {date}: {result.model}",
+        f"- **Requested by:** {project} | **Use case:** {use_desc}",
+        f"- **Overall:** {score}/100 ({rating}) | **TPS:** {tps} | **RAM:** {ram} GB",
+        f"- **Category scores:** Text {text} | Code {code} | Analysis {analysis} | Structured {structured} | Chat {chat}",
+        f"- **Fitness:** {fitness_str}",
+        f"- **Report:** {report_md}{data_md}",
+    ]
+
+    return "\n".join(lines)
+
+
+def _ensure_monthly_marker(file_path: Path, year_month: str) -> bool:
+    """Ensure a monthly history marker section exists in EVALUATION_LOG.md.
+
+    Creates the marker section if it doesn't exist yet.
+    Returns True if markers are available (existing or newly created).
+    """
+    begin = f"<!-- AI_EVAL:BEGIN history-{year_month} -->"
+    end = f"<!-- AI_EVAL:END history-{year_month} -->"
+
+    if has_markers(file_path, begin, end):
+        return True
+
+    # Need to create the section — find insertion point
+    content = file_path.read_text()
+
+    # Look for "## Evaluation History" heading
+    history_heading = "## Evaluation History"
+    heading_idx = content.find(history_heading)
+    if heading_idx == -1:
+        logger.warning("Could not find '## Evaluation History' in EVALUATION_LOG.md")
+        return False
+
+    # Find the end of the heading line
+    heading_end = content.find("\n", heading_idx)
+    if heading_end == -1:
+        heading_end = len(content)
+
+    # Skip past any text after the heading until the first ### or marker
+    insert_idx = heading_end + 1
+    # Skip blank lines and description text
+    while insert_idx < len(content):
+        line_end = content.find("\n", insert_idx)
+        if line_end == -1:
+            line_end = len(content)
+        line = content[insert_idx:line_end].strip()
+        if line.startswith("###") or line.startswith("<!--") or line.startswith("---"):
+            break
+        insert_idx = line_end + 1
+
+    # Insert the new monthly section before existing content
+    new_section = (
+        f"\n### {year_month}\n\n" f"{begin}\n" f"_(No evaluations recorded yet.)_\n" f"{end}\n"
+    )
+
+    updated = content[:insert_idx] + new_section + content[insert_idx:]
+    file_path.write_text(updated)
+    logger.info(f"Created monthly marker section: history-{year_month}")
+    return True
+
+
+def _update_log_history(
+    file_path: Path,
+    marker_name: str,
+    new_entry: str,
+) -> bool:
+    """Append a history entry to a marker section (does not deduplicate)."""
+    begin = f"<!-- AI_EVAL:BEGIN {marker_name} -->"
+    end = f"<!-- AI_EVAL:END {marker_name} -->"
+
+    if not has_markers(file_path, begin, end):
+        return False
+
+    existing = read_marker_content(file_path, begin, end) or ""
+
+    # Remove placeholder text
+    lines = existing.strip().split("\n") if existing.strip() else []
+    filtered = [line for line in lines if not line.strip().startswith("_(")]
+
+    # Append new entry
+    if filtered:
+        filtered.append("")  # blank line separator
+    filtered.append(new_entry)
+
+    new_content = "\n".join(filtered) + "\n"
+    return replace_marker_content(file_path, "\n" + new_content, begin, end)
+
+
 def _update_marker_section(
     file_path: Path,
     marker_name: str,
@@ -252,6 +412,7 @@ def export_to_catalog(
         "matrix": False,
         "hardware": False,
         "reports": False,
+        "log": False,
     }
 
     eval_path = config.evaluations_path
@@ -315,6 +476,38 @@ def export_to_catalog(
             )
             if outcomes["hardware"]:
                 logger.info("Updated HARDWARE_PROFILES.md")
+
+        # Update EVALUATION_LOG.md
+        log_path = eval_path / "EVALUATION_LOG.md"
+        if config.update_log and log_path.exists():
+            # Update summary table (replace existing row for same model)
+            summary_row = _render_summary_row(
+                result, config.requesting_project, report_relpath, scoring_config
+            )
+            summary_header = (
+                "| Model | Overall | TPS | RAM | Best Profile "
+                "| Requested By | Date | Report |\n"
+                "|-------|---------|-----|-----|-------------- "
+                "|--------------|------|--------|"
+            )
+            _update_marker_section(
+                log_path, "eval-summary", summary_row, table_header=summary_header
+            )
+
+            # Add history entry (append, don't replace)
+            year_month = result.timestamp.strftime("%Y-%m")
+            if _ensure_monthly_marker(log_path, year_month):
+                log_entry = _render_log_entry(
+                    result,
+                    config.requesting_project,
+                    config.use_case,
+                    report_relpath,
+                    scoring_config,
+                )
+                _update_log_history(log_path, f"history-{year_month}", log_entry)
+
+            outcomes["log"] = True
+            logger.info("Updated EVALUATION_LOG.md")
 
     except Exception as e:
         raise ExportError(f"Catalog export failed: {e}") from e

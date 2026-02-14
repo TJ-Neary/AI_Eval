@@ -23,7 +23,7 @@ import re
 import subprocess
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 import psutil
 
@@ -488,7 +488,7 @@ def get_memory_usage() -> Dict[str, float]:
     }
 
 
-def get_cpu_usage() -> Dict[str, float]:
+def get_cpu_usage() -> Dict[str, Union[float, list[float]]]:
     """Get current CPU usage."""
     return {
         "percent": psutil.cpu_percent(interval=0.1),
