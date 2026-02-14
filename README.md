@@ -6,7 +6,7 @@
 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
-![Status: Active Development](https://img.shields.io/badge/status-active%20development-yellow)
+![Status: Stable](https://img.shields.io/badge/status-stable-brightgreen)
 
 ---
 
@@ -30,8 +30,8 @@ A unified provider abstraction layer enables seamless evaluation across inferenc
 |----------|---------|--------|
 | Ollama | Local inference (Apple Silicon, NVIDIA, AMD, CPU) | Implemented |
 | Google Gemini | Cloud API via `google-genai` SDK | Implemented |
-| Anthropic Claude | Cloud API via `anthropic` SDK | Planned |
-| OpenAI GPT | Cloud API via `openai` SDK | Planned |
+| Anthropic Claude | Cloud API via `anthropic` SDK | Extensible — implement `BaseProvider` |
+| OpenAI GPT | Cloud API via `openai` SDK | Extensible — implement `BaseProvider` |
 
 ### Scoring Methodology
 
@@ -87,7 +87,7 @@ This enables cross-machine comparison: the same model evaluated on different har
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              AI_Eval CLI                                    │
-│  ai-eval run | quick-test | compare | hardware | list-models               │
+│  run | quick-test | compare | hardware | list-models | models | evaluate    │
 └─────────────────────────────────────────────────────────────────────────────┘
                                     │
                                     ▼
@@ -105,13 +105,16 @@ This enables cross-machine comparison: the same model evaluated on different har
 │  Anthropic*  │    │  Runner      │    │  Thermal     │    │  RAG Metrics │
 │  OpenAI*     │    │              │    │              │    │              │
 └──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-                                    │
-                                    ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           Reporting & Export                                │
-│  Jinja2 report templates · MODEL_CATALOG.md · DECISION_MATRIX.md · JSON    │
-└─────────────────────────────────────────────────────────────────────────────┘
-                                                              * = Planned
+          │                    │                                     │
+          ▼                    ▼                                     ▼
+┌──────────────┐    ┌─────────────────────────────────────────────────────────┐
+│  Evaluation  │    │                   Reporting & Export                     │
+│              │    │  Jinja2 reports · MODEL_CATALOG · DECISION_MATRIX · JSON │
+│  Config      │    └─────────────────────────────────────────────────────────┘
+│  Runner      │                                            * = Extensible
+│  Scorers     │
+│  Discovery   │
+└──────────────┘
 ```
 
 ### Design Principles
@@ -207,11 +210,17 @@ AI_Eval/
 │   │   └── rag_metrics.py      #   DeepEval RAG evaluation metrics
 │   ├── profiling/              # Hardware detection and resource monitoring
 │   │   └── hardware.py         #   Platform-aware hardware profiling
+│   ├── evaluation/             # Config-driven evaluation workflow
+│   │   ├── config.py           #   YAML config loading, dataclass definitions
+│   │   ├── runner.py           #   EvaluationRunner orchestration
+│   │   ├── scorers.py          #   Custom scorers (JSON, latency, pattern, citation)
+│   │   ├── model_discovery.py  #   Model catalog management, Ollama integration
+│   │   └── report.py           #   Evaluation report generator
 │   ├── reporting/              # Report generation
 │   │   ├── report_generator.py #   Jinja2-based markdown/JSON report generation
 │   │   ├── readme_updater.py   #   README.md results table updater
 │   │   └── templates/          #   Jinja2 report templates
-│   └── export/                 # Catalog export (planned)
+│   └── export/                 # Catalog export to shared markdown files
 ├── utils/                      # Shared utilities
 │   ├── exceptions.py           #   Custom exception hierarchy (AiEvalError base, ReportingError)
 │   ├── marker_parser.py        #   Marker-based content replacement for catalog updates
@@ -222,7 +231,8 @@ AI_Eval/
 │   └── plugin_loader.py        #   Dynamic plugin discovery system
 ├── configs/                    # Evaluation configuration files (YAML)
 │   └── default.yaml            #   Default evaluation configuration
-├── tests/                      # Test suite (pytest)
+├── evaluations/                # Evaluation configs and results (gitignored except README)
+├── tests/                      # Test suite (pytest, 203 tests)
 ├── docs/                       # Specifications and research
 │   ├── TEST_SUITE_SPEC.md      #   Detailed test definitions and scoring rubrics
 │   └── RESEARCH_SYNTHESIS.md   #   Synthesized research findings
@@ -250,22 +260,23 @@ AI_Eval/
 
 ## Development Status
 
-AI_Eval is in **active development**. The core evaluation infrastructure — provider abstraction, benchmark runner, scoring engine, and hardware detection — is implemented and functional. Reporting, export, and additional API providers are the next development priorities.
+AI_Eval is **stable and complete** as an evaluation framework. The core infrastructure — provider abstraction, benchmark runner, scoring engine, hardware detection, evaluation workflow, reporting, and catalog export — is fully implemented. The architecture is extensible: adding new providers requires only implementing the `BaseProvider` interface and registering with `ProviderFactory`.
 
 | Component | Status | Notes |
 |-----------|--------|-------|
 | Provider abstraction layer | Complete | `BaseProvider` + `ProviderFactory` pattern |
 | Ollama provider | Complete | Async generate/chat with throughput metrics |
 | Google Gemini provider | Complete | Cloud inference via `google-genai` SDK |
-| Anthropic / OpenAI providers | Planned | SDK dependencies included |
+| Anthropic / OpenAI providers | Extensible | Implement `BaseProvider` to add |
 | Benchmark runner | Complete | Warmup phase, concurrent execution, timeout handling |
 | Scoring — pass@k | Complete | HumanEval methodology with sandboxed execution |
 | Scoring — LLM-as-Judge | Complete | Bias-mitigated evaluation (TD-011) |
 | Scoring — RAG metrics | Complete | DeepEval integration (RAGAS) |
 | Hardware detection | Complete | Apple Silicon, NVIDIA, AMD, CPU fallback |
-| CLI | Functional | Core commands working, config loading in progress |
+| CLI | Complete | 7 commands: run, quick-test, compare, list-models, hardware, models, evaluate |
+| Evaluation workflow | Complete | Config-driven runner, custom scorers, model discovery |
 | Reporting | Complete | Jinja2 markdown/JSON reports, README results table |
-| Catalog export | Not started | Marker-based catalog file updates |
+| Catalog export | Complete | Marker-based updates to MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES |
 
 See [DevPlan.md](DevPlan.md) for the full development roadmap, technical decisions (TD-001 through TD-013), and task tracker.
 
@@ -280,7 +291,7 @@ AI_Eval follows test-driven development (TDD) practices with the Red-Green-Refac
 pytest
 
 # Run a specific test file
-pytest tests/test_example.py
+pytest tests/test_report_generator.py
 
 # Skip slow or integration tests
 pytest -m "not slow"
