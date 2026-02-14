@@ -2,7 +2,7 @@
 
 > Comprehensive development roadmap for AI_Eval, an LLM evaluation and benchmarking framework. This document covers architecture decisions, implementation phases, research synthesis, and task tracking for the full project lifecycle — from MVP through commercial readiness.
 
-**Current Phase:** MVP — Core evaluation infrastructure is fully implemented: providers (Ollama, Google), scoring, benchmarks, hardware profiling, reporting (Jinja2 + README integration), and catalog export (_HQ integration). 3 models benchmarked (llama3.1:8b, qwen2.5:32b, gemma2:27b). CI pipeline, security toolchain (bandit, pip-audit), and full mypy compliance are in place. Next: additional API providers, expanded test suites, and statistical rigor.
+**Current Phase:** MVP Complete — All core subsystems implemented and stable. Providers (Ollama, Google), scoring (pass@k, LLM-as-Judge, RAG), benchmarks, hardware profiling, evaluation workflow (config-driven runner, custom scorers, model discovery), reporting (Jinja2 + README integration), and catalog export (_HQ integration) are complete. 203 tests passing, CI pipeline green, full mypy/bandit/ruff compliance. Architecture is extensible for additional providers via the BaseProvider pattern.
 
 ---
 
@@ -295,17 +295,19 @@ Generate outputs and update template catalog.
   - [ ] Include dataset version hash in all reports
   - [ ] Store historical scores for regression detection
 
-### Phase 4: CLI & UX (Week 4)
+### Phase 4: CLI & UX (Week 4) ✅
 User-facing interface and quality of life.
 
-- [ ] **CLI commands**
-  - [ ] `ai-eval run` — full benchmark run
-  - [ ] `ai-eval quick-test --model <name>` — interactive single-model test
-  - [ ] `ai-eval compare --models <a>,<b>` — head-to-head comparison
-  - [ ] `ai-eval list-models` — show available models
-  - [ ] `ai-eval export` — update template folder without re-running tests
-  - [ ] `ai-eval estimate-cost` — project API costs before running (TD-009)
-  - [ ] `ai-eval rag-test` — dedicated RAG pipeline evaluation
+- [x] **CLI commands**
+  - [x] `ai-eval run` — full benchmark run
+  - [x] `ai-eval quick-test --model <name>` — interactive single-model test
+  - [x] `ai-eval compare --models <a>,<b>` — head-to-head comparison
+  - [x] `ai-eval list-models` — show available models
+  - [x] `ai-eval hardware` — display hardware profile
+  - [x] `ai-eval models` — model catalog management and discovery
+  - [x] `ai-eval evaluate` — config-driven evaluation runner
+  - [ ] `ai-eval export` — update template folder without re-running tests (deferred)
+  - [ ] `ai-eval estimate-cost` — project API costs before running (deferred)
 - [ ] **Visualization**
   - [ ] Generate PNG/SVG charts for score comparisons
   - [ ] Radar charts for category breakdowns
@@ -523,21 +525,21 @@ Test after local model evaluation is stable:
 
 | Task | Status | Owner | Notes |
 |------|--------|-------|-------|
-| Dataset schema + initial prompts | In Progress | — | 25 prompts (5 per category) |
+| Dataset schema + initial prompts | Implemented | — | 25 prompts (5 per category) |
 | Benchmark runner | Implemented | — | Core evaluation loop with warmup, concurrency |
 | Scoring system | Implemented | — | pass@k, LLM-as-Judge (TD-011), RAG metrics |
-| Real test suite | Not Started | — | Replace placeholder tests in `tests/` |
+| Evaluation workflow | Implemented | — | Config-driven runner, custom scorers, model discovery |
 
 ### Medium Priority
 
 | Task | Status | Owner | Notes |
 |------|--------|-------|-------|
 | GoogleProvider | Implemented | — | google-genai SDK |
-| AnthropicProvider | Not Started | — | anthropic SDK |
-| OpenAIProvider | Not Started | — | openai SDK |
-| Report generation | **Implemented** | — | Jinja2 templates, markdown + JSON output, README table |
-| Export to templates | **Implemented** | — | Updates MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES via markers |
-| CLI interface | **Implemented** | — | `run`, `quick-test` commands with `--report`, `--readme`, `--no-export` flags |
+| AnthropicProvider | Deferred | — | Extensible via BaseProvider pattern |
+| OpenAIProvider | Deferred | — | Extensible via BaseProvider pattern |
+| Report generation | Implemented | — | Jinja2 templates, markdown + JSON output, README table |
+| Export to templates | Implemented | — | Updates MODEL_CATALOG, DECISION_MATRIX, HARDWARE_PROFILES via markers |
+| CLI interface | Implemented | — | 7 commands: run, quick-test, compare, list-models, hardware, models, evaluate |
 
 ### Low Priority
 
@@ -553,14 +555,10 @@ Issues discovered during comprehensive code review:
 
 | Issue | Location | Status | Action Required |
 |-------|----------|--------|-----------------|
-| Hardcoded dataset | `src/cli.py:108` | TODO | Load from `RunConfig` or `configs/default.yaml` |
-| Empty reporting dir | `src/reporting/` | **Resolved** | Jinja2 report generation + README updater implemented |
-| Empty export dir | `src/export/` | **Resolved** | Catalog exporter implemented with 29 tests |
-| Placeholder tests | `tests/test_example.py` | Placeholder | Add real unit tests for providers, scoring, benchmarks |
-| Missing Anthropic provider | `src/providers/` | Not Started | Implement `AnthropicProvider` |
-| Missing OpenAI provider | `src/providers/` | Not Started | Implement `OpenAIProvider` |
-| Incomplete LLM judge rubrics | `src/scoring/llm_judge.py` | Partial | Only 5/9 criteria have rubrics (missing HARMLESSNESS, COMPLETENESS, CONCISENESS, CREATIVITY) |
-| RAG metrics not wired | `src/benchmarks/runner.py` | Not Integrated | `rag_metrics.py` module exists but `_score_response()` never calls it for RAG-type tests |
+| Reporting dir | `src/reporting/` | **Resolved** | Jinja2 report generation + README updater implemented |
+| Export dir | `src/export/` | **Resolved** | Catalog exporter implemented with 45 tests |
+| Placeholder tests | `tests/test_example.py` | **Resolved** | Removed; 203 real tests across 10 test files |
+| Anthropic/OpenAI providers | `src/providers/` | Deferred | Architecture extensible via BaseProvider |
 
 **Orphaned Utility Modules** (implemented but never imported):
 
@@ -867,7 +865,7 @@ Files in `~/Tech_Projects/_HQ/evaluations/` that AI_Eval will create or update:
 
 ## Quality Standards
 
-- **Testing**: pytest with coverage (`--cov=src --cov-report=term-missing`), 99 tests passing
+- **Testing**: pytest with coverage (`--cov=src --cov-report=term-missing`), 203 tests passing across 10 test files
 - **Formatting**: black (100 char line length), isort (black profile)
 - **Linting**: ruff (I001, F401, E741 rules enforced)
 - **Type checking**: mypy --ignore-missing-imports (0 errors across src/, utils/, tests/)
@@ -877,4 +875,6 @@ Files in `~/Tech_Projects/_HQ/evaluations/` that AI_Eval will create or update:
 
 ---
 
-*Last updated: 2026-02-08*
+> **Note:** Core development is complete. Advanced features (additional providers, visualization, regression detection) are deferred. The architecture supports extension via the `BaseProvider` pattern and YAML-driven configuration.
+
+*Last updated: 2026-02-14*
