@@ -128,9 +128,27 @@ evaluations/*
 **/*_private*
 **/*persona*.md
 
+
+# =============================================================================
+# Ecosystem / Agent Configuration (TJ-specific, not for public repos)
+# =============================================================================
+ANTIGRAVITY.md
+CODEX.md
+GEMINI.md
+AGENTS.md
+.agent/
+
+# =============================================================================
+# Agent Coordination (session data, not for public repos)
+# =============================================================================
 claude.md
 chatgpt.md
 gemini.md
 sessions/
-.agent/
-ANTIGRAVITY.md
+
+# =============================================================================
+# Security Scanner
+# =============================================================================
+.security_terms
+.security_baseline
+.tos_terms
