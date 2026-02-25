@@ -877,4 +877,15 @@ Files in `~/Tech_Projects/_HQ/evaluations/` that AI_Eval will create or update:
 
 > **Note:** Core development is complete. Advanced features (additional providers, visualization, regression detection) are deferred. The architecture supports extension via the `BaseProvider` pattern and YAML-driven configuration.
 
-*Last updated: 2026-02-14*
+### Integration Track (Ecosystem)
+
+MCP server for cross-project integration. Leaf module — core never imports from it.
+
+- [x] `src/mcp_server.py` — 4 read-only tools: `aieval_get_model_recommendation`, `aieval_list_evaluations`, `aieval_get_evaluation`, `aieval_get_manifest`
+- [x] `tests/test_mcp_server.py` — 14 tests
+- [x] Registered with Claude (`~/.claude.json`) and AG (`~/.gemini/antigravity/mcp_config.json`)
+- [x] Portability verified (core tests pass with MCP server removed)
+
+See `CLAUDE.md` → "MCP Server (Integration Track)" for tool documentation.
+
+*Last updated: 2026-02-24*
