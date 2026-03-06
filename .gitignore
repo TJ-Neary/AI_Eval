@@ -103,10 +103,14 @@ tmp/
 *.spec
 
 # =============================================================================
-# Project Internal
+# Project Internal (v2 organizational folders + legacy v1)
 # =============================================================================
-_project/Archive/
-_archive/
+_RESEARCH/
+_DEV/
+_CATALOG/
+_ARCHIVE/
+_INBOX/
+_project/
 
 # =============================================================================
 # Reports (generated benchmark output — only README is committed)
@@ -131,12 +135,23 @@ evaluations/*
 
 # =============================================================================
 # Ecosystem / Agent Configuration (TJ-specific, not for public repos)
+# Standard: ~/Tech_Projects/_HQ/standards/GITIGNORE.md
 # =============================================================================
+CLAUDE.md
 ANTIGRAVITY.md
 CODEX.md
 GEMINI.md
 AGENTS.md
 .agent/
+
+# =============================================================================
+# Operational Docs (internal development files, not for public repos)
+# =============================================================================
+StartHere.md
+DevPlan.md
+SECURITY.md
+scripts/security_scan.sh
+security_scan.sh
 
 # =============================================================================
 # Agent Coordination (session data, not for public repos)
